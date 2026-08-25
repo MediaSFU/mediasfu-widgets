@@ -1,0 +1,701 @@
+/* Step-by-step call flow styles with theme support */
+
+.step-content {
+  background: var(--card-bg, #f8f9fa);
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  padding: 2rem;
+  margin-top: 1rem;
+  box-shadow: 0 2px 4px var(--shadow-color, rgba(0,0,0,0.1));
+}
+
+.step-content h4 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  color: var(--text-color, #333);
+  font-size: 1.25rem;
+}
+
+.step-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color, #e0e0e0);
+}
+
+.mode-options {
+  display: grid;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.mode-option {
+  border: 2px solid var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, transform 0.3s ease, opacity 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+  background: var(--card-bg, #fff);
+  position: relative; /* Add this for absolute positioning of selection indicator */
+}
+
+.mode-option:hover {
+  border-color: var(--primary-color, #007bff);
+  background: var(--hover-bg, #f8f9fa);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px var(--shadow-color, rgba(0,0,0,0.15));
+}
+
+.mode-option.bot-mode {
+  border-color: var(--info-color, #17a2b8);
+}
+
+.mode-option.user-mode {
+  border-color: var(--success-color, #28a745);
+}
+
+.mode-header {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+}
+
+.mode-header h5 {
+  margin: 0;
+  color: var(--text-color, #333);
+  font-size: 1.1rem;
+}
+
+.mode-description {
+  font-size: 0.875rem;
+  color: var(--text-muted, #666);
+  margin-top: 0.5rem;
+}
+
+.mode-details {
+  font-size: 0.875rem;
+  color: var(--text-muted, #666);
+}
+
+.mode-details p {
+  margin: 0.25rem 0;
+}
+
+/* Enhanced mode option states */
+.mode-option.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: var(--disabled-bg, #f5f5f5);
+  border-color: var(--disabled-border, #ccc);
+}
+
+.mode-option.disabled:hover {
+  border-color: var(--disabled-border, #ccc);
+  background: var(--disabled-bg, #f5f5f5);
+  transform: none;
+  box-shadow: none;
+}
+
+.mode-option.auto-selected {
+  border-color: var(--success-color, #28a745);
+  background: var(--success-bg, #f8fff8);
+  box-shadow: 0 0 0 2px var(--success-focus-shadow, rgba(40, 167, 69, 0.25));
+}
+
+/* Selection indicator in top-right corner */
+.mode-option.auto-selected::after {
+  content: "✓";
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  background: var(--success-color, #28a745);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+}
+
+.mode-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.auto-selected-badge {
+  background: var(--success-color, #28a745);
+  color: white;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-weight: bold;
+}
+
+.unavailable-badge {
+  background: var(--danger-color, #dc3545);
+  color: white;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-weight: bold;
+}
+
+/* Quick call button in room header */
+.quick-call-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.quick-call-btn {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 8px;
+  white-space: nowrap;
+  min-width: 200px;
+}
+
+.quick-call-status {
+  font-size: 0.875rem;
+  color: var(--text-muted, #666);
+  font-weight: 500;
+}
+
+.call-room-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: var(--card-bg, #f8f9fa);
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #e0e0e0);
+}
+
+.call-details {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.call-status-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 0.875rem;
+  background: var(--info-color, #17a2b8);
+  color: white;
+}
+
+.call-number {
+  font-family: monospace;
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: var(--text-color, #333);
+}
+
+.requirement-warning {
+  color: var(--danger-color, #dc3545) !important;
+  font-weight: bold;
+}
+
+.connecting-status,
+.success-status {
+  text-align: center;
+  padding: 2rem;
+}
+
+.connecting-status p,
+.success-status p {
+  margin: 0.5rem 0;
+  color: var(--text-muted, #666);
+}
+
+.validation-message {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  border: 1px solid;
+}
+
+.validation-message.error {
+  background: var(--danger-bg, #f8d7da);
+  color: var(--danger-text, #721c24);
+  border-color: var(--danger-border, #f5c6cb);
+}
+
+/* Form inputs */
+.from-number-select,
+.phone-number-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color, #ddd);
+  border-radius: 6px;
+  background: var(--input-bg, #fff);
+  color: var(--text-color, #333);
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.from-number-select:focus,
+.phone-number-input:focus {
+  outline: none;
+  border-color: var(--primary-color, #007bff);
+  box-shadow: 0 0 0 3px var(--primary-focus-shadow, rgba(0,123,255,0.25));
+}
+
+.phone-number-section,
+.from-number-section {
+  margin-bottom: 1rem;
+}
+
+.phone-number-section label,
+.from-number-section label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--text-color, #333);
+}
+
+/* Step flow dialpad styles */
+.step-content .dialpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  max-width: 200px;
+  margin: 1rem auto 0;
+}
+
+.step-content .dialpad-btn {
+  padding: 0.75rem;
+  font-size: 1.125rem;
+  font-weight: bold;
+  border: 2px solid var(--border-color, #ddd);
+  border-radius: 8px;
+  background: var(--card-bg, #fff);
+  color: var(--text-color, #333);
+  cursor: pointer;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, transform 0.3s ease, opacity 0.3s ease, box-shadow 0.3s ease;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.step-content .dialpad-btn:hover:not(:disabled) {
+  border-color: var(--primary-color, #007bff);
+  background: var(--hover-bg, #f8f9fa);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px var(--shadow-color, rgba(0,0,0,0.15));
+}
+
+.step-content .dialpad-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px var(--shadow-color, rgba(0,0,0,0.1));
+}
+
+.step-content .dialpad-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.step-content .dialpad-plus {
+  background: var(--info-color, #17a2b8);
+  color: white;
+  border-color: var(--info-color, #17a2b8);
+}
+
+.step-content .dialpad-plus:hover:not(:disabled) {
+  background: var(--info-color, #138496);
+  border-color: var(--info-color, #138496);
+}
+
+.step-content .input-controls {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.step-content .dialpad-toggle {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+/* Dark theme support — widget uses body.dark class */
+body.dark {
+  --step-bg: #374151;
+  --step-text: #9ca3af;
+  --step-connector: #374151;
+  --card-bg: #1f2937;
+  --border-color: #374151;
+  --text-color: #f9fafb;
+  --text-muted: #9ca3af;
+  --shadow-color: rgba(0,0,0,0.3);
+  --hover-bg: #374151;
+  --input-bg: #374151;
+  --danger-bg: #7f1d1d;
+  --danger-text: #fca5a5;
+  --danger-border: #991b1b;
+  --primary-focus-shadow: rgba(59,130,246,0.25);
+  --disabled-bg: #374151;
+  --disabled-border: #4b5563;
+  --success-bg: #064e3b;
+  --success-focus-shadow: rgba(34, 197, 94, 0.25);
+}
+
+/* Hide other components during step flow */
+.dialer-section.step-flow-active .room-connection-section,
+.dialer-section.step-flow-active .phone-display,
+.dialer-section.step-flow-active > .dialer-content > .dialpad,
+.dialer-section.step-flow-active .call-actions,
+.dialer-section.step-flow-active .eligibility-info {
+  display: none !important;
+}
+
+/* Allow step content dialpad to show */
+.dialer-section.step-flow-active .step-content .dialpad {
+  display: grid !important;
+}
+
+/* Only show step flow content when active */
+.dialer-section.step-flow-active .step-content {
+  display: block !important;
+}
+
+/* Responsive design - only apply on small screens */
+@media (max-width: 767px) {
+  .step-content {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 320px) {
+  .step-content {
+    padding: 1rem;
+    margin-top: 0.5rem;
+  }
+}
+
+/* Force step content to be responsive on desktop and tablet */
+@media (min-width: 768px) {
+  .step-content {
+    max-width: 600px;
+    margin: 1rem auto;
+  }
+}
+
+/* ============================================
+   CALL PROGRESS UI — Flutter-matching phases
+   ============================================ */
+
+/* Quick Call Progress Overlay (shown when dialer is hidden) */
+.quick-call-progress-overlay {
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  border-radius: 12px;
+  animation: slideInDown 0.3s ease;
+}
+
+/* Room Overlay — sits on top of MediaSFURoomDisplay */
+.call-progress-room-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(8px);
+  border-radius: 12px;
+  animation: overlayFadeIn 0.3s ease;
+  pointer-events: auto;
+}
+
+.app.light .call-progress-room-overlay {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideInDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Progress Chips — horizontal breadcrumb */
+.call-progress-chips {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.progress-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, transform 0.3s ease, opacity 0.3s ease, box-shadow 0.3s ease;
+  white-space: nowrap;
+}
+
+.progress-chip.pending {
+  background: #374151;
+  color: #6b7280;
+  opacity: 0.5;
+}
+
+.progress-chip.current {
+  background: #3b82f6;
+  color: white;
+  box-shadow: 0 2px 10px rgba(59, 130, 246, 0.5);
+  animation: chipPulse 2s ease-in-out infinite;
+}
+
+.progress-chip.completed {
+  background: #22c55e;
+  color: white;
+}
+
+.chip-icon {
+  font-size: 0.85rem;
+}
+
+.chip-label {
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+@keyframes chipPulse {
+  0%, 100% { box-shadow: 0 2px 10px rgba(59, 130, 246, 0.5); }
+  50%      { box-shadow: 0 2px 20px rgba(59, 130, 246, 0.8); }
+}
+
+/* Progress Bar */
+.call-progress-bar-container {
+  width: 100%;
+  height: 6px;
+  background: #374151;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.call-progress-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s ease;
+  background: linear-gradient(90deg, #3b82f6, #22c55e);
+}
+
+/* Status Card */
+.call-status-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+  border: 2px solid transparent;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, transform 0.3s ease, opacity 0.3s ease, box-shadow 0.3s ease;
+}
+
+.call-status-card.status-phase-dialing {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: #6366f1;
+}
+
+.call-status-card.status-phase-resolving {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: #8b5cf6;
+}
+
+.call-status-card.status-phase-ringing {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: #f59e0b;
+  animation: ringPulse 1.5s ease-in-out infinite;
+}
+
+.call-status-card.status-phase-connecting {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: #3b82f6;
+}
+
+.call-status-card.status-phase-connected {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: #22c55e;
+}
+
+@keyframes ringPulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.01); }
+}
+
+.status-card-icon {
+  font-size: 1.8rem;
+  flex-shrink: 0;
+}
+
+.status-card-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.status-card-title {
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #e2e8f0;
+  margin-bottom: 2px;
+}
+
+.status-card-message {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.status-card-spinner {
+  flex-shrink: 0;
+}
+
+/* Call Detail Card */
+.call-detail-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 0.75rem;
+}
+
+.call-detail-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.call-detail-row:last-child {
+  margin-bottom: 0;
+}
+
+.call-detail-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #94a3b8;
+  min-width: 55px;
+}
+
+.call-detail-value {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  font-family: 'Courier New', monospace;
+}
+
+.connected-hint {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #22c55e;
+  font-weight: 500;
+  margin-top: 0.5rem;
+}
+
+/* Light Theme Overrides */
+.app.light .progress-chip.pending {
+  background: #e5e7eb;
+  color: #9ca3af;
+}
+
+.app.light .call-progress-bar-container {
+  background: #e5e7eb;
+}
+
+.app.light .call-status-card.status-phase-dialing {
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.app.light .call-status-card.status-phase-resolving {
+  background: rgba(139, 92, 246, 0.1);
+}
+
+.app.light .call-status-card.status-phase-ringing {
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.app.light .call-status-card.status-phase-connecting {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.app.light .call-status-card.status-phase-connected {
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.app.light .status-card-title {
+  color: #1e293b;
+}
+
+.app.light .status-card-message {
+  color: #64748b;
+}
+
+.app.light .call-detail-card {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.app.light .call-detail-label {
+  color: #64748b;
+}
+
+.app.light .call-detail-value {
+  color: #1e293b;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .call-progress-chips {
+    gap: 3px;
+  }
+  .progress-chip {
+    padding: 4px 8px;
+    font-size: 0.65rem;
+  }
+  .chip-icon {
+    font-size: 0.75rem;
+  }
+  .call-status-card {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .status-card-icon {
+    font-size: 1.4rem;
+  }
+}

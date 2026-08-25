@@ -1,0 +1,92 @@
+/* AudioVisualizer.css */
+
+/* —————————————————————————————————————————————————————————
+   CARD WRAPPER
+   ————————————————————————————————————————————————————————— */
+.audio-visualizer-card {
+  background-color: var(--card-background);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow:
+    0 2px 4px var(--inset-light),
+    0 4px 8px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition:
+    transform 0.2s ease-out,
+    box-shadow 0.2s ease-out,
+    border-color 0.2s ease-out;
+  position: relative;
+  overflow: hidden;
+}
+
+/* thin gradient bar at top for a dash of color */
+.audio-visualizer-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 16px;
+  right: 16px;
+  height: 4px;
+  border-radius: 2px 2px 0 0;
+  background: linear-gradient(90deg, var(--primary-color), var(--background-color));
+  opacity: 0.6;
+  transition: opacity 0.2s ease-out;
+}
+
+/* lift & brighten on hover */
+.audio-visualizer-card:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 4px 8px var(--inset-light),
+    0 8px 16px rgba(0, 0, 0, 0.1);
+  border-color: var(--primary-color);
+}
+.audio-visualizer-card:hover::before {
+  opacity: 1;
+}
+
+/* —————————————————————————————————————————————————————————
+   HEADER
+   ————————————————————————————————————————————————————————— */
+.audio-visualizer-card h3 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  position: relative;
+}
+.audio-visualizer-card h3::after {
+  content: "";
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 32px;
+  height: 2px;
+  background: var(--primary-color);
+  border-radius: 1px;
+}
+
+/* —————————————————————————————————————————————————————————
+   CANVAS
+   ————————————————————————————————————————————————————————— */
+.audio-visualizer-card canvas {
+  width: 100%;
+  height: auto;            /* maintains fixed height via JS */
+  max-height: 200px;
+  border-radius: 8px;
+  background-color: var(--background-color);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.2s ease-out;
+}
+
+/* subtle glow on active */
+.audio-visualizer-card.animate canvas {
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.1),
+    0 0 12px var(--primary-color);
+}

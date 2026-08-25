@@ -1,0 +1,401 @@
+/**
+ * Theme CSS for MediaSFU Widget Building Blocks
+ *
+ * All blocks use CSS custom properties prefixed with --msfu-
+ * Override these in your application to customize the look.
+ *
+ * Usage:
+ * ```css
+ * :root {
+ *   --msfu-color-primary: #6366f1;
+ *   --msfu-border-radius: 12px;
+ * }
+ * ```
+ */
+
+:root {
+  /* ===========================
+     Color Palette
+     =========================== */
+
+  /* Primary Colors */
+  /* MediaSFU teal, not Tailwind blue.
+     These were #3b82f6 / #eff6ff / #1d4ed8 — Tailwind's blue-500 scale
+     untouched, which meant a customer dropping in a MediaSFU widget got a
+     generic blue that matched nothing we ship. The app, the site and every
+     showcase run on #14a394; the widgets now agree with them.
+     Any integrator who preferred the blue can still set the three tokens —
+     that is what this file is for. */
+  --msfu-color-primary: #14a394;
+  --msfu-color-primary-light: #e6f7f4;
+  --msfu-color-primary-dark: #0d7b6f;
+
+  /* Secondary Colors */
+  --msfu-color-secondary: #8b5cf6;
+  --msfu-color-secondary-light: #f5f3ff;
+
+  /* Status Colors */
+  --msfu-color-success: #10b981;
+  --msfu-color-success-light: #ecfdf5;
+  --msfu-color-warning: #f59e0b;
+  --msfu-color-warning-light: #fef3c7;
+  --msfu-color-error: #ef4444;
+  --msfu-color-error-light: #fef2f2;
+
+  /* Neutral Colors */
+  --msfu-color-background: #f9fafb;
+  --msfu-color-background-dark: #1f2937;
+  --msfu-color-surface: #ffffff;
+  --msfu-color-surface-dark: #f3f4f6;
+  --msfu-color-border: #e5e7eb;
+  --msfu-color-hover: #f3f4f6;
+
+  /* Text Colors */
+  --msfu-color-text: #1f2937;
+  --msfu-color-text-muted: #6b7280;
+  --msfu-color-text-light: #9ca3af;
+  --msfu-color-text-on-primary: #ffffff;
+
+  /* ===========================
+     Typography
+     =========================== */
+  --msfu-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                       'Helvetica Neue', Arial, sans-serif;
+  --msfu-font-size-xs: 0.75rem;   /* 12px */
+  --msfu-font-size-sm: 0.875rem;  /* 14px */
+  --msfu-font-size-base: 1rem;    /* 16px */
+  --msfu-font-size-lg: 1.125rem;  /* 18px */
+  --msfu-font-size-xl: 1.25rem;   /* 20px */
+  --msfu-font-size-2xl: 1.5rem;   /* 24px */
+
+  --msfu-font-weight-normal: 400;
+  --msfu-font-weight-medium: 500;
+  --msfu-font-weight-semibold: 600;
+  --msfu-font-weight-bold: 700;
+
+  --msfu-line-height: 1.5;
+
+  /* ===========================
+     Spacing
+     =========================== */
+  --msfu-spacing-xs: 4px;
+  --msfu-spacing-sm: 8px;
+  --msfu-spacing-md: 16px;
+  --msfu-spacing-lg: 24px;
+  --msfu-spacing-xl: 32px;
+  --msfu-spacing-2xl: 48px;
+
+  /* ===========================
+     Border Radius
+     =========================== */
+  --msfu-border-radius-sm: 4px;
+  --msfu-border-radius: 8px;
+  --msfu-border-radius-lg: 12px;
+  --msfu-border-radius-xl: 16px;
+  --msfu-border-radius-full: 9999px;
+
+  /* ===========================
+     Shadows
+     =========================== */
+  /* These were Tailwind's stock scale, verbatim: single-layer, pure black at
+     10%. Two things make that read as a default rather than a design.
+
+     PURE BLACK — a widget lands on somebody else's page, rarely pure white, and
+     a black shadow over a tinted surface goes muddy grey instead of reading as
+     shade. Basing it on a blue-grey (16, 24, 40) holds up on warm, cool and
+     coloured hosts alike.
+
+     ONE LAYER — a real shadow is a tight contact shadow plus a wide soft one;
+     a single blur reads as a sticker. Each step pairs the two and adds a
+     hairline ring, which keeps the edge crisp when a card sits on a surface
+     its own colour.
+
+     Cost is unchanged: still static box-shadows, never animated. */
+  --msfu-shadow-sm:
+    0 1px 2px rgba(16, 24, 40, 0.06),
+    0 0 0 1px rgba(16, 24, 40, 0.04);
+  --msfu-shadow-md:
+    0 2px 4px -1px rgba(16, 24, 40, 0.06),
+    0 4px 12px -2px rgba(16, 24, 40, 0.08),
+    0 0 0 1px rgba(16, 24, 40, 0.04);
+  --msfu-shadow-lg:
+    0 4px 8px -2px rgba(16, 24, 40, 0.06),
+    0 12px 24px -6px rgba(16, 24, 40, 0.12),
+    0 0 0 1px rgba(16, 24, 40, 0.04);
+  --msfu-shadow-xl:
+    0 8px 16px -4px rgba(16, 24, 40, 0.08),
+    0 24px 48px -12px rgba(16, 24, 40, 0.18),
+    0 0 0 1px rgba(16, 24, 40, 0.04);
+
+  /* The lit top edge: one pixel of highlight implies a light above the page,
+     which is what makes a surface read as an object resting on the host page
+     rather than a hole cut in it. Compose it with a shadow —
+       box-shadow: var(--msfu-elevation-lip), var(--msfu-shadow-md); */
+  --msfu-elevation-lip: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+
+  /* A widget must never depend on the host page's focus styles; plenty of
+     sites remove them outright. One visible ring, defined once. */
+  --msfu-focus-ring: 0 0 0 3px rgba(20, 163, 148, 0.35);
+  --msfu-focus-outline: 2px solid var(--msfu-color-primary);
+
+  /* ===========================
+     Transitions
+     =========================== */
+  --msfu-transition-fast: 150ms ease;
+  --msfu-transition-base: 200ms ease;
+  --msfu-transition-slow: 300ms ease;
+
+  /* ===========================
+     Z-Index
+     =========================== */
+  --msfu-z-dropdown: 1000;
+  --msfu-z-sticky: 1020;
+  --msfu-z-fixed: 1030;
+  --msfu-z-modal-backdrop: 1040;
+  --msfu-z-modal: 1050;
+  --msfu-z-popover: 1060;
+  --msfu-z-tooltip: 1070;
+}
+
+/* ===========================
+   Dark Mode Support
+   =========================== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --msfu-color-background: #111827;
+    --msfu-color-background-dark: #0f172a;
+    --msfu-color-surface: #1f2937;
+    --msfu-color-surface-dark: #374151;
+    --msfu-color-border: #374151;
+    --msfu-color-hover: #374151;
+
+    --msfu-color-text: #f9fafb;
+    --msfu-color-text-muted: #9ca3af;
+    --msfu-color-text-light: #6b7280;
+
+    /* The light scale is near-invisible on a dark surface — shadow works by
+       darkening, and there is nothing left to darken. On dark, depth comes
+       from a deeper cast plus a LIGHT hairline instead of a dark one. */
+    --msfu-shadow-sm:
+      0 1px 2px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(255, 255, 255, 0.04);
+    --msfu-shadow-md:
+      0 2px 4px -1px rgba(0, 0, 0, 0.4),
+      0 4px 12px -2px rgba(0, 0, 0, 0.45),
+      0 0 0 1px rgba(255, 255, 255, 0.05);
+    --msfu-shadow-lg:
+      0 4px 8px -2px rgba(0, 0, 0, 0.45),
+      0 12px 24px -6px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(255, 255, 255, 0.055);
+    --msfu-shadow-xl:
+      0 8px 16px -4px rgba(0, 0, 0, 0.5),
+      0 24px 48px -12px rgba(0, 0, 0, 0.6),
+      0 0 0 1px rgba(255, 255, 255, 0.06);
+
+    /* 60% white would blow out on a dark panel. */
+    --msfu-elevation-lip: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+    --msfu-focus-ring: 0 0 0 3px rgba(94, 234, 212, 0.45);
+
+    --msfu-color-primary-light: rgba(20, 163, 148, 0.18);
+    --msfu-color-secondary-light: rgba(139, 92, 246, 0.15);
+    --msfu-color-success-light: rgba(16, 185, 129, 0.15);
+    --msfu-color-warning-light: rgba(245, 158, 11, 0.15);
+    --msfu-color-error-light: rgba(239, 68, 68, 0.15);
+  }
+}
+
+/* ===========================
+   Base Block Styles
+   =========================== */
+.msfu-block {
+  font-family: var(--msfu-font-family);
+  font-size: var(--msfu-font-size-base);
+  line-height: var(--msfu-line-height);
+  color: var(--msfu-color-text);
+  box-sizing: border-box;
+}
+
+.msfu-block *,
+.msfu-block *::before,
+.msfu-block *::after {
+  box-sizing: inherit;
+}
+
+/* ===========================
+   Common Button Styles
+   =========================== */
+.msfu-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--msfu-spacing-xs);
+  padding: var(--msfu-spacing-sm) var(--msfu-spacing-md);
+  font-family: var(--msfu-font-family);
+  font-size: var(--msfu-font-size-sm);
+  font-weight: var(--msfu-font-weight-medium);
+  line-height: 1;
+  border: none;
+  border-radius: var(--msfu-border-radius);
+  cursor: pointer;
+  transition: background-color var(--msfu-transition-fast), border-color var(--msfu-transition-fast), color var(--msfu-transition-fast), transform var(--msfu-transition-fast), opacity var(--msfu-transition-fast), box-shadow var(--msfu-transition-fast);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.msfu-button:focus-visible {
+  outline: 2px solid var(--msfu-color-primary);
+  outline-offset: 2px;
+}
+
+.msfu-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.msfu-button--primary {
+  background-color: var(--msfu-color-primary);
+  color: var(--msfu-color-text-on-primary);
+}
+
+.msfu-button--primary:hover:not(:disabled) {
+  background-color: var(--msfu-color-primary-dark);
+}
+
+.msfu-button--secondary {
+  background-color: var(--msfu-color-surface);
+  color: var(--msfu-color-text);
+  border: 1px solid var(--msfu-color-border);
+}
+
+.msfu-button--secondary:hover:not(:disabled) {
+  background-color: var(--msfu-color-hover);
+}
+
+.msfu-button--danger {
+  background-color: var(--msfu-color-error);
+  color: var(--msfu-color-text-on-primary);
+}
+
+.msfu-button--danger:hover:not(:disabled) {
+  background-color: #dc2626;
+}
+
+.msfu-button--icon {
+  padding: var(--msfu-spacing-sm);
+  border-radius: var(--msfu-border-radius-full);
+}
+
+.msfu-button--large {
+  padding: var(--msfu-spacing-md) var(--msfu-spacing-lg);
+  font-size: var(--msfu-font-size-base);
+}
+
+/* ===========================
+   Animation Keyframes
+   =========================== */
+@keyframes msfu-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes msfu-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes msfu-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes msfu-audio-pulse {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.05);
+    opacity: 0;
+  }
+}
+
+@keyframes msfu-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes msfu-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===========================
+   Utility Classes
+   =========================== */
+.msfu-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.msfu-spinner {
+  animation: msfu-spin 1s linear infinite;
+}
+
+.msfu-fade-in {
+  animation: msfu-fade-in var(--msfu-transition-base);
+}
+
+.msfu-slide-up {
+  animation: msfu-slide-up var(--msfu-transition-slow);
+}
+
+/* ===========================
+   Motion budget
+   ===========================
+   `msfu-spin` and `msfu-pulse` above run unconditionally. On a widget that is
+   not a style preference — a spinner that never stops, inside a page belonging
+   to someone who asked their operating system for less motion, is an
+   accessibility defect we are shipping into their site.
+
+   Scoped to msfu- elements only. A bare `*` here would reach into the host
+   page and stop THEIR animations, which is the worst thing a widget stylesheet
+   can do. */
+@media (prefers-reduced-motion: reduce) {
+  [class*='msfu-'],
+  [class*='msfu-']::before,
+  [class*='msfu-']::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

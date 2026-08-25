@@ -1,0 +1,52 @@
+{
+  "name": "@mediasfu/widgets-vue",
+  "version": "1.0.0",
+  "description": "Vue components for MediaSFU widgets - video calls, AI agents, click-to-call buttons",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite",
+    "test": "vitest",
+    "lint": "eslint src --ext .ts,.vue",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MediaSFU/mediasfu-widgets-vue.git"
+  },
+  "keywords": [
+    "mediasfu",
+    "vue",
+    "widget",
+    "video-call",
+    "ai-agent",
+    "click-to-call",
+    "webrtc",
+    "voip"
+  ],
+  "author": "MediaSFU <support@mediasfu.com>",
+  "license": "MIT",
+  "peerDependencies": {
+    "vue": "^3.0.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.0",
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0",
+    "vite-plugin-dts": "^3.0.0",
+    "vue": "^3.4.0",
+    "vue-tsc": "^2.0.0"
+  }
+}

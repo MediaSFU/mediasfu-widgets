@@ -1,0 +1,45 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "declaration": true,
+    "declarationDir": "./dist",
+    "emitDeclarationOnly": false,
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  // meeting-room and sip-phone are retired: not in WidgetType, not exported
+  // from index.ts, and not in the product's WIDGET_TYPES list. The sources are
+  // kept for reference but excluded so they cannot be compiled back into a
+  // bundle customers download. Reinstating one means restoring the product
+  // list and WidgetType first - see the comment on WidgetType in src/types.ts.
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "src/components/meeting-room/**",
+    "src/components/sip-phone/**"
+  ]
+}

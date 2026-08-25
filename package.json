@@ -1,0 +1,156 @@
+{
+  "name": "@mediasfu/widgets",
+  "version": "0.1.0",
+  "description": "Embeddable MediaSFU web components for click-to-call, meeting join, AI agents, calls dashboards, React, and headless WebRTC UI",
+  "main": "dist/widget.js",
+  "module": "dist/widget.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/widget.mjs",
+      "require": "./dist/widget.js"
+    },
+    "./call-button": {
+      "types": "./dist/entries/call-button.d.ts",
+      "import": "./dist/subpaths/call-button.mjs",
+      "require": "./dist/subpaths/call-button.cjs"
+    },
+    "./meeting-join": {
+      "types": "./dist/entries/meeting-join.d.ts",
+      "import": "./dist/subpaths/meeting-join.mjs",
+      "require": "./dist/subpaths/meeting-join.cjs"
+    },
+    "./ai-agent": {
+      "types": "./dist/entries/ai-agent.d.ts",
+      "import": "./dist/subpaths/ai-agent.mjs",
+      "require": "./dist/subpaths/ai-agent.cjs"
+    },
+    "./web-agent": {
+      "types": "./dist/entries/web-agent.d.ts",
+      "import": "./dist/subpaths/web-agent.mjs",
+      "require": "./dist/subpaths/web-agent.cjs"
+    },
+    "./calls": {
+      "types": "./dist/entries/calls.d.ts",
+      "import": "./dist/subpaths/calls.mjs",
+      "require": "./dist/subpaths/calls.cjs"
+    },
+    "./agent-dashboard": {
+      "types": "./dist/entries/agent-dashboard.d.ts",
+      "import": "./dist/subpaths/agent-dashboard.mjs",
+      "require": "./dist/subpaths/agent-dashboard.cjs"
+    },
+    "./react": {
+      "types": "./dist/entries/react.d.ts",
+      "import": "./dist/subpaths/react.mjs",
+      "require": "./dist/subpaths/react.cjs"
+    },
+    "./headless": {
+      "types": "./dist/entries/headless.d.ts",
+      "import": "./dist/subpaths/headless.mjs",
+      "require": "./dist/subpaths/headless.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist/*.d.ts",
+    "dist/assets",
+    "dist/blocks/*.d.ts",
+    "dist/components/**/*.d.ts",
+    "dist/core/*.d.ts",
+    "dist/entries/*.d.ts",
+    "dist/headless/*.d.ts",
+    "dist/types/*.d.ts",
+    "dist/widgets/*.d.ts",
+    "dist/subpaths/*.cjs",
+    "dist/subpaths/*.mjs",
+    "dist/widget.css",
+    "dist/widget.js",
+    "dist/widget.mjs",
+    "README.md"
+  ],
+  "scripts": {
+    "dev": "rollup -c rollup.config.mjs -w",
+    "prebuild": "node scripts/clean-dist.mjs",
+    "build": "rollup -c rollup.config.mjs --environment BUILD:production",
+    "build:subpaths": "rollup -c rollup.config.mjs --environment BUILD:production,MODULAR_ONLY:true",
+    "postbuild": "node scripts/check-bundle-budgets.mjs && npm run sync:platforms",
+    "build:types": "tsc --emitDeclarationOnly",
+    "check:bundle-size": "node scripts/check-bundle-budgets.mjs",
+    "sync:platforms": "node scripts/sync-platform-bundles.mjs",
+    "lint": "eslint src --ext .ts,.tsx",
+    "test": "node --test",
+    "release:check": "tsc --noEmit --pretty false && npm run lint && npm run build && npm test",
+    "prepublishOnly": "npm run release:check",
+    "test:scope": "node --test test/studioOperatorProperty.test.cjs"
+  },
+  "keywords": [
+    "mediasfu",
+    "webrtc",
+    "voip",
+    "video-call",
+    "widget",
+    "embeddable",
+    "click-to-call",
+    "ai-agent",
+    "web-component",
+    "meeting-join",
+    "calls-dashboard",
+    "agent-dashboard",
+    "headless-webrtc"
+  ],
+  "author": "MediaSFU",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MediaSFU/mediasfu-widgets.git"
+  },
+  "homepage": "https://mediasfu.com/widgets",
+  "bugs": {
+    "url": "https://github.com/MediaSFU/mediasfu-widgets/issues"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^25.0.0",
+    "@rollup/plugin-node-resolve": "^15.0.0",
+    "@rollup/plugin-replace": "^6.0.3",
+    "@rollup/plugin-terser": "^0.4.0",
+    "@rollup/plugin-typescript": "^11.0.0",
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "@mediapipe/selfie_segmentation": "0.1.1675465747",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.0.0",
+    "jest": "^29.0.0",
+    "mediasfu-reactjs": "4.3.0",
+    "rollup": "^4.0.0",
+    "rollup-plugin-css-only": "^4.0.0",
+    "tslib": "^2.6.0",
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "@mediapipe/selfie_segmentation": ">=0.1.0",
+    "mediasfu-reactjs": ">=4.3.0 <5",
+    "react": ">=17.0.0",
+    "react-dom": ">=17.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@mediapipe/selfie_segmentation": {
+      "optional": true
+    },
+    "mediasfu-reactjs": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  }
+}

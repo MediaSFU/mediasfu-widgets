@@ -1,0 +1,441 @@
+/* Advanced Controls Inline Component Styles */
+/* HARDCODED dark theme — renders inside MRD/CallsPage dark context */
+/* Uses !important on key properties to override any inherited CSS variables */
+
+/* Main container */
+.advanced-controls-inline {
+  border-radius: 8px;
+  box-shadow: none;
+  border: 1px solid #4a5568 !important;
+  padding: 10px 12px;
+  width: 100%;
+  box-sizing: border-box;
+  background: #1e293b !important;
+  color: #e2e8f0 !important;
+}
+
+/* Light theme override */
+.app.light .advanced-controls-inline {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-color: #e1e5e9 !important;
+}
+
+/* Container for advanced controls content */
+.advanced-controls-container {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Controls grid */
+.advanced-controls-inline .controls-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  width: 100%;
+  align-items: start;
+  contain: layout;
+}
+
+@media (min-width: 768px) {
+  .advanced-controls-inline .controls-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .advanced-controls-inline .controls-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Control cards */
+.advanced-controls-inline .control-card {
+  border: 1px solid #374151 !important;
+  border-radius: 6px;
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+  box-shadow: none;
+  width: 100%;
+  box-sizing: border-box;
+  background: #1a202c !important;
+}
+
+.advanced-controls-inline .control-card:hover {
+  border-color: #63b3ed !important;
+}
+
+/* Light theme control cards */
+.app.light .advanced-controls-inline .control-card {
+  background: #ffffff !important;
+  border-color: #d1d5db !important;
+}
+
+.app.light .advanced-controls-inline .control-card:hover {
+  border-color: #2563eb !important;
+}
+
+.control-card-header {
+  background: #2d3748 !important;
+  color: #e2e8f0 !important;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 0.78rem;
+  border-bottom: 1px solid #374151 !important;
+}
+
+.app.light .control-card-header {
+  background: #f3f4f6 !important;
+  color: #1f2937 !important;
+  border-bottom-color: #e1e5e9 !important;
+}
+
+.control-icon {
+  font-size: 0.82rem;
+}
+
+.control-card-header h4 {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.control-card-content {
+  padding: 10px 12px;
+  background: transparent;
+}
+
+.advanced-controls-inline .input-group {
+  margin-bottom: 8px;
+}
+
+.advanced-controls-inline .input-label {
+  display: block;
+  margin-bottom: 3px;
+  font-weight: 600;
+  font-size: 0.72rem;
+  color: #e2e8f0 !important;
+}
+
+/* Light theme labels */
+.app.light .advanced-controls-inline .input-label {
+  color: #000000 !important;
+}
+
+/* Form inputs, selects, and textareas */
+.advanced-controls-inline .modern-input,
+.advanced-controls-inline .modern-select,
+.advanced-controls-inline .modern-textarea {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid #4a5568 !important;
+  border-radius: 5px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+  line-height: 1.4;
+  background: #0f172a !important;
+  color: #e2e8f0 !important;
+}
+
+/* Textarea specific */
+.advanced-controls-inline .modern-textarea {
+  resize: vertical;
+  min-height: 50px;
+  max-height: 120px;
+  font-family: inherit;
+}
+
+/* Light theme form inputs */
+.app.light .advanced-controls-inline .modern-input,
+.app.light .advanced-controls-inline .modern-select,
+.app.light .advanced-controls-inline .modern-textarea {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-color: #d1d5db !important;
+}
+
+/* Placeholder styles */
+.advanced-controls-inline .modern-input::placeholder,
+.advanced-controls-inline .modern-textarea::placeholder {
+  color: #64748b;
+  font-weight: 400;
+  opacity: 1;
+}
+
+.app.light .advanced-controls-inline .modern-input::placeholder,
+.app.light .advanced-controls-inline .modern-textarea::placeholder {
+  color: #6b7280;
+}
+
+/* Select dropdown options */
+.advanced-controls-inline .modern-select option {
+  padding: 4px 8px;
+  font-weight: 500;
+  font-size: 0.78rem;
+  background: #1e293b;
+  color: #e2e8f0;
+}
+
+/* Light theme select options */
+.app.light .advanced-controls-inline .modern-select option {
+  background: #ffffff;
+  color: #000000;
+}
+
+.app.light .advanced-controls-inline .modern-select option:checked,
+.app.light .advanced-controls-inline .modern-select option:hover,
+.app.light .advanced-controls-inline .modern-select option:focus {
+  background: #f3f4f6;
+  color: #000000;
+}
+
+/* Focus states */
+.advanced-controls-inline .modern-input:focus,
+.advanced-controls-inline .modern-select:focus,
+.advanced-controls-inline .modern-textarea:focus {
+  outline: none;
+  border-color: #63b3ed !important;
+  box-shadow: 0 0 0 3px rgba(99, 179, 237, 0.15);
+}
+
+/* Light theme focus states */
+.app.light .advanced-controls-inline .modern-input:focus,
+.app.light .advanced-controls-inline .modern-select:focus,
+.app.light .advanced-controls-inline .modern-textarea:focus {
+  border-color: #2563eb !important;
+  background: #ffffff !important;
+  color: #000000 !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* Disabled states */
+.advanced-controls-inline .modern-input:disabled,
+.advanced-controls-inline .modern-select:disabled,
+.advanced-controls-inline .modern-textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+  background: #374151 !important;
+  color: #9ca3af !important;
+  border-color: #6b7280 !important;
+}
+
+.app.light .advanced-controls-inline .modern-input:disabled,
+.app.light .advanced-controls-inline .modern-select:disabled,
+.app.light .advanced-controls-inline .modern-textarea:disabled {
+  background: #f9fafb !important;
+  color: #6b7280 !important;
+  border-color: #e5e7eb !important;
+}
+
+.advanced-controls-inline .checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.advanced-controls-inline .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-weight: 500;
+  color: #e2e8f0 !important;
+}
+
+/* Light theme checkbox labels */
+.app.light .advanced-controls-inline .checkbox-label {
+  color: #000000 !important;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: #63b3ed;
+  cursor: pointer;
+}
+
+.app.light .checkbox-label input[type="checkbox"] {
+  accent-color: #2563eb;
+}
+
+.checkbox-label input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.checkbox-label span {
+  font-weight: 500;
+  user-select: none;
+  color: inherit;
+}
+
+.control-action-btn {
+  width: 100%;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  box-shadow: none;
+}
+
+.btn-success {
+  background: #28a745;
+  color: white;
+}
+
+.btn-success:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.btn-primary {
+  background: #667eea;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.btn-info {
+  background: #17a2b8;
+  color: white;
+}
+
+.btn-info:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.btn-warning {
+  background: #ffc107;
+  color: #212529;
+}
+
+.btn-warning:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.control-action-btn:disabled {
+  background: #374151 !important;
+  color: #6b7280 !important;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.app.light .control-action-btn:disabled {
+  background: #e9ecef !important;
+  color: #6c757d !important;
+}
+
+.agent-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.agent-status {
+  margin-top: 8px;
+  padding: 5px 8px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+}
+
+.status-indicator {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.status-indicator.active {
+  color: #10b981;
+}
+
+.app.light .status-indicator.active {
+  color: #155724;
+}
+
+.no-agent-message p {
+  color: #94a3b8 !important;
+}
+
+.app.light .no-agent-message p {
+  color: #666666 !important;
+}
+
+.advanced-controls-inline .control-description {
+  margin: 0 0 8px 0;
+  font-size: 0.68rem;
+  line-height: 1.4;
+  font-weight: 400;
+  color: #94a3b8 !important;
+}
+
+/* Light theme control descriptions */
+.app.light .advanced-controls-inline .control-description {
+  color: #666666 !important;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 767px) {
+  .advanced-controls-inline {
+    padding: 8px;
+  }
+
+  .advanced-controls-inline .controls-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .control-card-header {
+    padding: 6px 10px;
+    font-size: 0.72rem;
+  }
+
+  .control-card-content {
+    padding: 8px 10px;
+  }
+
+  .control-action-btn {
+    padding: 6px 10px;
+    font-size: 0.72rem;
+  }
+
+  /* Ensure all advanced control items flow vertically */
+  .advanced-controls-section {
+    width: 100%;
+  }
+
+  .advanced-controls-content {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 15px !important;
+    width: 100% !important;
+  }
+
+  /* Make individual control cards full width */
+  .advanced-controls-content > * {
+    width: 100% !important;
+    max-width: none !important;
+    flex: none !important;
+  }
+}

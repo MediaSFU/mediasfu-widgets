@@ -1,0 +1,80 @@
+{% comment %}
+  MediaSFU Widget Snippet for Shopify
+
+  Usage:
+    {% render 'mediasfu-widget',
+      widget_key: 'wk_xxx',
+      widget_type: 'call-button',
+      destination: '+1234567890',
+      button_text: 'Call Us',
+      theme: 'light',
+      position: 'bottom-right'
+    %}
+{% endcomment %}
+
+{% liquid
+  assign widget_key = widget_key | default: ''
+  assign widget_type = widget_type | default: 'call-button'
+  assign destination = destination | default: ''
+  assign button_text = button_text | default: 'Call Now'
+  assign button_icon = button_icon | default: ''
+  assign theme = theme | default: 'light'
+  assign position = position | default: 'inline'
+  assign agent_id = agent_id | default: ''
+  assign config_name = config_name | default: ''
+  assign operator_name = operator_name | default: ''
+  assign allow_escalation = allow_escalation | default: false
+  assign mode = mode | default: 'voice'
+  assign room_prefix = room_prefix | default: ''
+  assign show_preview = show_preview | default: true
+  assign require_name = require_name | default: true
+  assign width = width | default: '100%'
+  assign height = height | default: '680px'
+%}
+
+{% if widget_key != blank %}
+  {% case widget_type %}
+    {% when 'meeting-join' %}{% assign tag_name = 'mediasfu-meeting-join' %}
+    {% when 'ai-agent' %}{% assign tag_name = 'mediasfu-ai-agent' %}
+    {% when 'web-agent' %}{% assign tag_name = 'mediasfu-web-agent' %}
+    {% when 'calls' %}{% assign tag_name = 'mediasfu-calls' %}
+    {% when 'agent-dashboard' %}{% assign tag_name = 'mediasfu-agent-dashboard' %}
+    {% else %}{% assign tag_name = 'mediasfu-call-button' %}
+  {% endcase %}
+
+  <{{ tag_name }}
+    widget-key="{{ widget_key }}"
+    theme="{{ theme }}"
+    position="{{ position }}"
+    {% case widget_type %}
+      {% when 'call-button' %}
+        {% if destination != blank %}destination="{{ destination }}"{% endif %}
+        {% if button_text != blank %}button-text="{{ button_text }}"{% endif %}
+        {% if button_icon != blank %}button-icon="{{ button_icon }}"{% endif %}
+      {% when 'ai-agent' %}
+        {% if agent_id != blank %}agent-id="{{ agent_id }}"{% endif %}
+        mode="{{ mode }}"
+        width="{{ width }}"
+        height="{{ height }}"
+      {% when 'meeting-join' %}
+        {% if room_prefix != blank %}room-prefix="{{ room_prefix }}"{% endif %}
+        show-preview="{{ show_preview }}"
+        require-name="{{ require_name }}"
+      {% when 'web-agent' %}
+        {% if config_name != blank %}config-name="{{ config_name }}"{% endif %}
+        mode="{{ mode }}"
+        allow-escalation="{{ allow_escalation }}"
+        width="{{ width }}"
+        height="{{ height }}"
+      {% when 'calls' %}
+        width="{{ width }}"
+        height="{{ height }}"
+      {% when 'agent-dashboard' %}
+        {% if operator_name != blank %}operator-name="{{ operator_name }}"{% endif %}
+        width="{{ width }}"
+        height="{{ height }}"
+    {% endcase %}
+  ></{{ tag_name }}>
+{% else %}
+  <!-- MediaSFU Widget: Missing widget key -->
+{% endif %}

@@ -1,0 +1,61 @@
+{
+  "name": "@mediasfu/widgets-react",
+  "version": "1.0.0",
+  "description": "React components for MediaSFU widgets - video calls, AI agents, click-to-call buttons",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "test": "jest",
+    "lint": "eslint src --ext .ts,.tsx",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MediaSFU/mediasfu-widgets-react.git"
+  },
+  "keywords": [
+    "mediasfu",
+    "react",
+    "widget",
+    "video-call",
+    "ai-agent",
+    "click-to-call",
+    "webrtc",
+    "voip"
+  ],
+  "author": "MediaSFU <support@mediasfu.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/MediaSFU/mediasfu-widgets-react/issues"
+  },
+  "homepage": "https://mediasfu.com/widgets",
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^25.0.0",
+    "@rollup/plugin-node-resolve": "^15.0.0",
+    "@rollup/plugin-typescript": "^11.0.0",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "rollup": "^4.0.0",
+    "rollup-plugin-dts": "^6.0.0",
+    "typescript": "^5.0.0"
+  }
+}

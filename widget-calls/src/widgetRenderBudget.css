@@ -1,0 +1,77 @@
+/* widgetRenderBudget — capability gate for the Calls widget.
+ *
+ * WHY A WIDGET NEEDS THIS MORE THAN AN APP DOES
+ * This CSS is injected into somebody else's page. Whatever the widget spends
+ * on compositing is spent on their frame budget, on their traffic, on hardware
+ * we never chose. The app has had a gate like this for a while
+ * (src/styles/renderBudget.css); the shipped widgets never got one.
+ *
+ * `backdrop-filter` is the expensive one: each use promotes its element to its
+ * own compositor layer and re-blurs everything behind it. There are seven in
+ * the Calls widget alone, and they sit on surfaces that are already close to
+ * opaque — so dropping the blur where the device or the user asks for less
+ * costs almost nothing to look at and returns real work to the host page.
+ *
+ * SCOPED, NEVER GLOBAL
+ * Every rule is nested under the widget's own root (`.app`). A bare `*` here
+ * would reach into the host page and strip effects from the customer's own
+ * UI — the single worst thing a widget stylesheet can do.
+ *
+ * The four conditions below are all "this device or person wants less":
+ * a small viewport (usually a phone, usually the weakest GPU present),
+ * an explicit reduced-transparency preference, an explicitly slow display,
+ * and an opt-in class a host can set if they know their page is heavy.
+ */
+
+@media (max-width: 900px) {
+  .app *,
+  .app *::before,
+  .app *::after {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .app *,
+  .app *::before,
+  .app *::after {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+/* A display that reports it cannot repaint quickly — e-ink, some embedded
+   panels, and browsers throttling a background frame. */
+@media (update: slow) {
+  .app *,
+  .app *::before,
+  .app *::after {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+/* Host opt-out: any page can add `perf-lite` to the widget's container and get
+   the cheap path regardless of device. Documented so integrators have a lever
+   that does not require a fork. */
+.app.perf-lite *,
+.app.perf-lite *::before,
+.app.perf-lite *::after {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Motion belongs to the same budget. Animation on a widget inside someone
+   else's page should stop when they have asked for stillness — this catches
+   any keyframe animation the component CSS declares without its own guard. */
+@media (prefers-reduced-motion: reduce) {
+  .app *,
+  .app *::before,
+  .app *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

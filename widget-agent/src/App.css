@@ -1,0 +1,646 @@
+/**
+ * Widget-Agent App.css — Modern AI Agent Widget
+ * Inspired by unified-live-explorer.jsx patterns
+ * Dark-first design with light mode support
+ */
+
+/* Six weights were requested and five are used — 300 appears nowhere in this
+   widget's CSS, so it was a font file fetched into every customer's page for
+   nothing. `display=swap` already keeps text from being render-blocked; this
+   just stops paying for a weight we never set.
+
+   Worth revisiting separately: a widget imposing ANY third-party font request
+   on its host page is a choice, not a given. The fallback stack below is
+   system-ui, which needs no request at all. Left in place because removing it
+   changes how every existing embed looks, which is your call rather than a
+   cleanup. */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
+
+/* ═══════════ Animations ═══════════ */
+@keyframes pulse-ring {
+  0%   { transform: scale(1);   opacity: 0.5; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+@keyframes wave {
+  from { transform: scaleY(0.4); }
+  to   { transform: scaleY(1.3); }
+}
+@keyframes dot-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.3; }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+/* ═══════════ Variables ═══════════ */
+:root {
+  --agent-accent: #6C5CE7;
+  --agent-green: #00F5A0;
+  --agent-bg: #0C0F1A;
+  --agent-surface: rgba(255,255,255,0.03);
+  --agent-border: rgba(255,255,255,0.06);
+  --agent-text: #F5F6FA;
+  --agent-text-secondary: #8395A7;
+  --agent-card-bg: rgba(255,255,255,0.04);
+  --agent-input-bg: rgba(255,255,255,0.06);
+  --agent-danger: #FF4757;
+  --agent-radius: 14px;
+  --agent-font: 'Outfit', system-ui, -apple-system, sans-serif;
+}
+
+/* ═══════════ Scrollbar ═══════════ */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ═══════════ Container ═══════════ */
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  overflow: hidden;
+  font-family: var(--agent-font);
+  font-size: 14px;
+  line-height: 1.5;
+  background: var(--agent-bg);
+  color: var(--agent-text);
+}
+
+/* Light mode overrides */
+.container:not(.dark) {
+  --agent-bg: #F8F9FC;
+  --agent-surface: rgba(0,0,0,0.02);
+  --agent-border: rgba(0,0,0,0.08);
+  --agent-text: #1a1a2e;
+  --agent-text-secondary: #6b7280;
+  --agent-card-bg: #ffffff;
+  --agent-input-bg: #f3f4f6;
+  background: var(--agent-bg);
+  color: var(--agent-text);
+}
+
+/* ═══════════ Header ═══════════ */
+.header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--agent-border);
+  background: rgba(12,15,26,0.95);
+  flex-shrink: 0;
+  backdrop-filter: blur(12px);
+}
+.container:not(.dark) .header-bar {
+  background: rgba(255,255,255,0.95);
+}
+
+.header-left h1 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.02em;
+  color: var(--agent-text);
+}
+.header-left .powered-by {
+  font-size: 10px;
+  color: var(--agent-text-secondary);
+  text-decoration: none;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  display: block;
+  margin-top: 1px;
+  transition: color 0.2s;
+}
+.header-left .powered-by:hover {
+  color: var(--agent-accent);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Status indicator */
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  background: var(--agent-surface);
+  border: 1px solid var(--agent-border);
+  color: var(--agent-text-secondary);
+  transition: background-color 0.3s, border-color 0.3s, color 0.3s, transform 0.3s, opacity 0.3s, box-shadow 0.3s;
+}
+.status-indicator.live {
+  background: rgba(0,245,160,0.08);
+  border-color: rgba(0,245,160,0.2);
+  color: var(--agent-green);
+}
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.status-dot.connected {
+  background: var(--agent-green);
+  box-shadow: 0 0 8px rgba(0,245,160,0.5);
+  animation: dot-pulse 1.4s infinite;
+}
+.status-dot.disconnected {
+  background: var(--agent-text-secondary);
+}
+.status-text {
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Dark mode toggle */
+.darkModeToggle {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 10px;
+  background: var(--agent-surface);
+  border: 1px solid var(--agent-border);
+  color: var(--agent-text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s, opacity 0.2s, box-shadow 0.2s;
+}
+.darkModeToggle:hover {
+  background: rgba(255,255,255,0.08);
+  color: #fbbf24;
+}
+.container:not(.dark) .darkModeToggle:hover {
+  background: rgba(0,0,0,0.06);
+  color: #f59e0b;
+}
+
+/* Model Selection — hidden */
+.modelSelectionBar-container {
+  display: none !important;
+}
+
+/* ═══════════ Main Content ═══════════ */
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+  padding: 0;
+}
+
+/* ═══════════ Agent Hero ═══════════ */
+.agent-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 20px 12px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.agent-orb {
+  position: relative;
+  width: 140px;
+  height: 90px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(108,92,231,0.12), rgba(0,245,160,0.06));
+  border: 1px solid rgba(108,92,231,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Listed explicitly like the rest of the widget CSS. `background-image` is in
+     the list because the .listening state swaps one gradient for another —
+     `background-color` alone would have silently killed that fade, which is
+     why the automated pass skipped this rule rather than guessing. */
+  transition:
+    background-image 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  overflow: hidden;
+}
+.agent-orb.listening {
+  border-color: rgba(0,245,160,0.25);
+  background: linear-gradient(135deg, rgba(0,245,160,0.08), rgba(108,92,231,0.04));
+  box-shadow: 0 0 20px rgba(0,245,160,0.08);
+}
+.agent-orb.speaking {
+  border-color: rgba(108,92,231,0.35);
+  background: linear-gradient(135deg, rgba(108,92,231,0.15), rgba(0,245,160,0.08));
+  box-shadow: 0 0 30px rgba(108,92,231,0.15);
+}
+
+.agent-orb-inner {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 18px;
+}
+.agent-orb-inner canvas {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 18px;
+}
+
+/* Pulse rings */
+.agent-pulse-ring {
+  position: absolute;
+  inset: -8px;
+  border-radius: 24px;
+  border: 2px solid rgba(108,92,231,0.25);
+  animation: pulse-ring 2s ease-out infinite;
+  pointer-events: none;
+}
+.agent-pulse-ring.delay {
+  animation-delay: 0.6s;
+}
+
+/* Status label under orb */
+.agent-status-label {
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--agent-text-secondary);
+  transition: color 0.3s;
+}
+.agent-status-label.speaking { color: var(--agent-accent); }
+.agent-status-label.listening { color: var(--agent-green); }
+.agent-status-label.ready { color: var(--agent-green); }
+.agent-status-label.connecting { color: var(--agent-text-secondary); }
+
+/* ═══════════ Transcript Bar ═══════════ */
+.transcript-bar {
+  padding: 8px 20px;
+  flex-shrink: 0;
+}
+.transcript-bar p {
+  margin: 0;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: var(--agent-card-bg);
+  border: 1px solid var(--agent-border);
+  font-size: 13px;
+  line-height: 1.5;
+  animation: slideUp 0.3s ease;
+}
+.transcript-you {
+  font-weight: 700;
+  color: var(--agent-accent);
+  margin-right: 6px;
+}
+.transcript-text {
+  color: var(--agent-text);
+}
+.transcript-placeholder {
+  color: var(--agent-text-secondary);
+  font-style: italic;
+  font-size: 12px;
+}
+.container:not(.dark) .transcript-bar p {
+  background: #ffffff;
+  border-color: rgba(0,0,0,0.08);
+}
+
+/* ═══════════ Chat Card ═══════════ */
+.chatCard {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0 20px 12px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.chatBox {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  border-radius: var(--agent-radius);
+  background: var(--agent-card-bg);
+  border: 1px solid var(--agent-border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+}
+.container:not(.dark) .chatBox {
+  background: #ffffff;
+  border-color: rgba(0,0,0,0.08);
+}
+
+/* Chat messages */
+.chatMessage {
+  padding: 8px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 85%;
+  word-wrap: break-word;
+  animation: slideUp 0.2s ease;
+}
+.chatMessage strong {
+  font-weight: 600;
+  margin-right: 4px;
+}
+.chatMessage.user {
+  align-self: flex-end;
+  background: linear-gradient(135deg, var(--agent-accent), #5A4BD1);
+  color: #ffffff;
+  border-bottom-right-radius: 4px;
+}
+.chatMessage.agent {
+  align-self: flex-start;
+  background: rgba(0,245,160,0.08);
+  color: var(--agent-text);
+  border: 1px solid rgba(0,245,160,0.12);
+  border-bottom-left-radius: 4px;
+}
+.container:not(.dark) .chatMessage.agent {
+  background: #f0fdf4;
+  border-color: rgba(0,200,130,0.15);
+  color: #1a1a2e;
+}
+.chatMessage.system {
+  align-self: center;
+  background: transparent;
+  color: var(--agent-text-secondary);
+  font-size: 12px;
+  font-style: italic;
+  padding: 4px 8px;
+  max-width: 100%;
+}
+
+/* Chat input */
+.chatInputContainer {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-shrink: 0;
+}
+.chatInput {
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--agent-border);
+  font-size: 13px;
+  font-family: var(--agent-font);
+  outline: none;
+  background: var(--agent-input-bg);
+  color: var(--agent-text);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.chatInput::placeholder {
+  color: var(--agent-text-secondary);
+}
+.chatInput:focus {
+  border-color: var(--agent-accent);
+  box-shadow: 0 0 0 3px rgba(108,92,231,0.12);
+}
+.container:not(.dark) .chatInput {
+  background: #ffffff;
+  border-color: rgba(0,0,0,0.12);
+  color: #1a1a2e;
+}
+.container:not(.dark) .chatInput:focus {
+  border-color: var(--agent-accent);
+  box-shadow: 0 0 0 3px rgba(108,92,231,0.1);
+}
+
+.sendButton {
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--agent-accent), #5A4BD1);
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+  transition: transform 0.15s, box-shadow 0.2s;
+}
+.sendButton:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 14px rgba(108,92,231,0.3);
+}
+
+/* ═══════════ Toast ═══════════ */
+.toast {
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  margin: 6px 0;
+  text-align: center;
+  animation: slideUp 0.3s ease;
+}
+.toast.info {
+  background: rgba(59,130,246,0.1);
+  color: #60a5fa;
+  border: 1px solid rgba(59,130,246,0.15);
+}
+.toast.success {
+  background: rgba(0,245,160,0.08);
+  color: var(--agent-green);
+  border: 1px solid rgba(0,245,160,0.15);
+}
+.toast.error {
+  background: rgba(255,71,87,0.1);
+  color: var(--agent-danger);
+  border: 1px solid rgba(255,71,87,0.15);
+}
+
+/* ═══════════ Self-View PIP ═══════════ */
+.self-view-pip {
+  position: fixed;
+  bottom: 90px;
+  right: 16px;
+  width: 120px;
+  height: 90px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 2px solid var(--agent-accent);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+  z-index: 50;
+  background: #000;
+}
+.pip-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.pip-swap {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  font-size: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pip-cam-select {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  right: 4px;
+  padding: 2px 4px;
+  border-radius: 6px;
+  border: none;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  font-size: 9px;
+  font-family: var(--agent-font);
+}
+
+/* ═══════════ Control Dock ═══════════ */
+.bottomBar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-top: 1px solid var(--agent-border);
+  background: rgba(12,15,28,0.95);
+  backdrop-filter: blur(12px);
+  flex-shrink: 0;
+}
+.container:not(.dark) .bottomBar {
+  background: rgba(255,255,255,0.95);
+}
+
+.ctrl-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  padding: 0;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s, opacity 0.2s, box-shadow 0.2s;
+  color: var(--agent-text-secondary);
+}
+.ctrl-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.ctrl-btn:hover:not(:disabled) .ctrl-icon {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.12);
+}
+.container:not(.dark) .ctrl-btn:hover:not(:disabled) .ctrl-icon {
+  background: rgba(0,0,0,0.06);
+  border-color: rgba(0,0,0,0.12);
+}
+
+.ctrl-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--agent-surface);
+  border: 1px solid var(--agent-border);
+  font-size: 16px;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s, opacity 0.2s, box-shadow 0.2s;
+  color: var(--agent-text-secondary);
+}
+
+/* Active state */
+.ctrl-btn.active .ctrl-icon {
+  background: rgba(0,245,160,0.12);
+  border-color: rgba(0,245,160,0.25);
+  color: var(--agent-green);
+}
+.ctrl-btn.active .ctrl-label {
+  color: var(--agent-green);
+}
+
+/* Capture button (larger, accent) */
+.ctrl-btn.capture .ctrl-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  font-size: 18px;
+  background: rgba(108,92,231,0.12);
+  border-color: rgba(108,92,231,0.25);
+  color: var(--agent-accent);
+}
+.ctrl-btn.capture.active .ctrl-icon {
+  background: rgba(255,71,87,0.15);
+  border-color: rgba(255,71,87,0.3);
+  color: var(--agent-danger);
+}
+.ctrl-btn.capture.active .ctrl-label {
+  color: var(--agent-danger);
+}
+
+.ctrl-label {
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--agent-text-secondary);
+  letter-spacing: 0.02em;
+}
+
+/* ═══════════ Responsive ═══════════ */
+@media (max-width: 480px) {
+  .header-bar { padding: 10px 14px; }
+  .header-left h1 { font-size: 14px; }
+  .agent-hero { padding: 14px 14px 8px; }
+  .agent-orb { width: 120px; height: 75px; }
+  .chatCard { padding: 0 14px 10px; }
+  .transcript-bar { padding: 6px 14px; }
+  .bottomBar { gap: 6px; padding: 8px 12px; }
+  .ctrl-icon { width: 38px; height: 38px; border-radius: 12px; font-size: 14px; }
+  .ctrl-btn.capture .ctrl-icon { width: 44px; height: 44px; }
+  .ctrl-label { font-size: 8px; }
+}
+
+/* ═══════════ AudioVisualizer overrides ═══════════ */
+.audio-visualizer-card {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+.audio-visualizer-card::before {
+  display: none !important;
+}
