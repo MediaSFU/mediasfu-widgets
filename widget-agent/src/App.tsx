@@ -284,6 +284,7 @@ function InnerApp() {
       mode={params.mode}
       idleStyle={params.idleStyle}
       sessionToken={effectiveSessionToken}
+      agentId={params.agentId}
     />
   );
 }

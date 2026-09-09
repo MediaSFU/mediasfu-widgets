@@ -1,6 +1,6 @@
 {
   "name": "@mediasfu/widgets",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Embeddable MediaSFU web components for click-to-call, meeting join, AI agents, calls dashboards, React, and headless WebRTC UI",
   "main": "dist/widget.js",
   "module": "dist/widget.mjs",
@@ -126,6 +126,7 @@
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
     "eslint": "^8.0.0",
+    "eslint-plugin-react-hooks": "^4.6.2",
     "jest": "^29.0.0",
     "mediasfu-reactjs": "4.3.0",
     "rollup": "^4.0.0",

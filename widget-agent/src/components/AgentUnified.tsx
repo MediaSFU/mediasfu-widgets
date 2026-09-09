@@ -41,6 +41,18 @@ import {
 } from "../hooks/useAudioVideoSDK";
 import MediaSFUHandler, { MediaSFUHandlerProps } from "./MediaSFUHandler";
 import type { WidgetConfig } from "../hooks/useWidgetAgent";
+import {
+  AUDIO_PLAYBACK_EDGE_FADE_SECONDS,
+  getAudioPlaybackEnvelope,
+} from "../audioPlaybackEnvelope";
+import {
+  AgentOutputPlaybackMode,
+  createAgentOutputNamespace,
+  initialAgentOutputMode,
+  nextAgentOutputMode,
+  shouldPlaySocketAgentOutput,
+  withAgentOutputDefaults,
+} from "../agentOutputRouting";
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -59,6 +71,7 @@ export interface AgentUnifiedProps {
   mode?: "voice" | "multimodal";
   idleStyle?: IdleStyle;
   sessionToken?: string;
+  agentId?: string;
 }
 
 type EncodedSocketAudio =
@@ -69,7 +82,19 @@ type EncodedSocketAudio =
 
 type QueuedAudioPlayback =
   | { kind: "encoded"; audio: string }
-  | { kind: "pcm16"; audio: EncodedSocketAudio; sampleRate?: number };
+  | {
+      kind: "pcm16";
+      audio: EncodedSocketAudio;
+      sampleRate?: number;
+      streaming?: boolean;
+    };
+
+type StreamingPlaybackEnvelope = {
+  node: GainNode;
+  generation: number;
+  endAt: number;
+  sealed: boolean;
+};
 
 type PcmJitterBufferState = {
   key: string;
@@ -301,6 +326,7 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
   mode = "multimodal",
   idleStyle = "orb",
   sessionToken,
+  agentId,
 }) => {
   // ── Phase state machine ─────────────────────────────────────
   const [phase, setPhase] = useState<SessionPhase>("presession");
@@ -314,6 +340,13 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
   const audioQueue = useRef<QueuedAudioPlayback[]>([]);
   const audioQueueDraining = useRef<boolean>(false);
   const activeAudioSources = useRef<Set<AudioBufferSourceNode>>(new Set());
+  const activeAudioSourceGains = useRef<Map<AudioBufferSourceNode, GainNode>>(
+    new Map()
+  );
+  const streamingPlaybackEnvelope = useRef<StreamingPlaybackEnvelope | null>(
+    null
+  );
+  const streamingPlaybackComplete = useRef<boolean>(false);
   const playbackCursor = useRef<number>(0);
   const playbackGeneration = useRef<number>(0);
   const playbackMutedMic = useRef<boolean>(false);
@@ -335,6 +368,7 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
     updatedAt: 0,
   });
   const socketListenerCleanup = useRef<(() => void) | null>(null);
+  const startBuffersListenerCleanup = useRef<(() => void) | null>(null);
 
   const micOn = useRef<boolean>(false);
   const tempMicOn = useRef<boolean>(false);
@@ -345,7 +379,28 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
   const lastCaptureToggleRef = useRef<number>(0);
   const voicePipelineConfirmed = useRef<boolean>(false);
   const realtimeVoiceMode = useRef<boolean>(false);
+  const preferWebRtcAgentOutput = useRef<boolean>(true);
+  const agentOutputMode = useRef<AgentOutputPlaybackMode>("awaiting-webrtc");
+  const widgetInstanceId = useRef<string>(
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `widget-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  );
+  const agentOutputNamespace = useRef<string>("");
   const sessionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const managedTimeouts = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+
+  const scheduleManagedTimeout = (
+    callback: () => void,
+    delayMs: number
+  ): ReturnType<typeof setTimeout> => {
+    const timer = setTimeout(() => {
+      managedTimeouts.current.delete(timer);
+      callback();
+    }, delayMs);
+    managedTimeouts.current.add(timer);
+    return timer;
+  };
 
   // ── Source parameters (MediaSFU SDK) ────────────────────────
   const sourceParameters = useRef<Record<string, any>>({});
@@ -673,6 +728,7 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
 
   const markStreamedAudioPending = () => {
     streamedAudioPending.current = true;
+    streamingPlaybackComplete.current = false;
     lastStreamedAudioAt.current = Date.now();
     if (streamedAudioResetTimer.current) {
       clearTimeout(streamedAudioResetTimer.current);
@@ -758,12 +814,32 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
     generation = playbackGeneration.current
   ) => {
     if (generation !== playbackGeneration.current) return;
-    if (
-      audioQueueDraining.current ||
-      audioQueue.current.length > 0 ||
-      activeAudioSources.current.size > 0
-    ) {
-      return;
+    if (audioQueueDraining.current || audioQueue.current.length > 0) return;
+
+    if (streamingPlaybackComplete.current) {
+      const envelope = streamingPlaybackEnvelope.current;
+      const audioContext = audioContextRef.current;
+      if (envelope && audioContext && !envelope.sealed) {
+        const endAt = Math.max(audioContext.currentTime, envelope.endAt);
+        const { fadeOutStartAt } = getAudioPlaybackEnvelope(
+          audioContext.currentTime,
+          endAt
+        );
+        envelope.node.gain.setValueAtTime(1, fadeOutStartAt);
+        envelope.node.gain.linearRampToValueAtTime(0, endAt);
+        envelope.sealed = true;
+      }
+      streamingPlaybackComplete.current = false;
+    }
+    if (activeAudioSources.current.size > 0) return;
+
+    if (streamingPlaybackEnvelope.current?.generation === generation) {
+      try {
+        streamingPlaybackEnvelope.current.node.disconnect();
+      } catch {
+        /* already disconnected */
+      }
+      streamingPlaybackEnvelope.current = null;
     }
 
     isAudioPlaying.current = false;
@@ -810,7 +886,8 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
 
   const scheduleAudioBuffer = async (
     audioBuffer: AudioBuffer,
-    generation: number
+    generation: number,
+    streamingPcm: boolean
   ) => {
     if (!audioContextRef.current) return;
     const canPlay = await beginAgentPlayback(generation);
@@ -819,17 +896,61 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
     const audioContext = audioContextRef.current;
     const source = audioContext.createBufferSource();
     source.buffer = audioBuffer;
-    source.connect(audioContext.destination);
-    activeAudioSources.current.add(source);
 
     const startAt = Math.max(
       playbackCursor.current || 0,
       audioContext.currentTime + 0.02
     );
-    playbackCursor.current = startAt + audioBuffer.duration;
+    const endAt = startAt + audioBuffer.duration;
+    let gainNode: GainNode;
+
+    if (streamingPcm) {
+      const currentEnvelope = streamingPlaybackEnvelope.current;
+      if (
+        currentEnvelope &&
+        currentEnvelope.generation === generation &&
+        !currentEnvelope.sealed
+      ) {
+        currentEnvelope.endAt = Math.max(currentEnvelope.endAt, endAt);
+        gainNode = currentEnvelope.node;
+      } else {
+        gainNode = audioContext.createGain();
+        const { fadeInEndAt } = getAudioPlaybackEnvelope(startAt, endAt);
+        gainNode.gain.setValueAtTime(0, startAt);
+        gainNode.gain.linearRampToValueAtTime(1, fadeInEndAt);
+        gainNode.connect(audioContext.destination);
+        streamingPlaybackEnvelope.current = {
+          node: gainNode,
+          generation,
+          endAt,
+          sealed: false,
+        };
+      }
+    } else {
+      gainNode = audioContext.createGain();
+      const envelope = getAudioPlaybackEnvelope(startAt, endAt);
+      gainNode.gain.setValueAtTime(0, startAt);
+      gainNode.gain.linearRampToValueAtTime(1, envelope.fadeInEndAt);
+      gainNode.gain.setValueAtTime(1, envelope.fadeOutStartAt);
+      gainNode.gain.linearRampToValueAtTime(0, endAt);
+      gainNode.connect(audioContext.destination);
+    }
+
+    source.connect(gainNode);
+    activeAudioSources.current.add(source);
+    activeAudioSourceGains.current.set(source, gainNode);
+    playbackCursor.current = endAt;
 
     source.onended = () => {
       activeAudioSources.current.delete(source);
+      activeAudioSourceGains.current.delete(source);
+      if (streamingPlaybackEnvelope.current?.node !== gainNode) {
+        try {
+          gainNode.disconnect();
+        } catch {
+          /* already disconnected */
+        }
+      }
       void finishAgentPlaybackIfIdle(generation);
     };
 
@@ -837,6 +958,7 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
       source.start(startAt);
     } catch (error) {
       activeAudioSources.current.delete(source);
+      activeAudioSourceGains.current.delete(source);
       console.warn("[widget-agent] Failed to schedule audio chunk:", error);
       void finishAgentPlaybackIfIdle(generation);
     }
@@ -856,7 +978,11 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
         if (!item) continue;
         const audioBuffer = await decodeQueuedAudio(item);
         if (!audioBuffer || generation !== playbackGeneration.current) continue;
-        await scheduleAudioBuffer(audioBuffer, generation);
+        await scheduleAudioBuffer(
+          audioBuffer,
+          generation,
+          item.kind === "pcm16" && item.streaming === true
+        );
       }
     } catch (error) {
       console.error("[widget-agent] Failed to drain audio queue:", error);
@@ -886,14 +1012,46 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
     userTextStream.current = { text: "", updatedAt: 0 };
     clearStreamedAudioPending();
 
+    const audioContext = audioContextRef.current;
+    const stopAt = audioContext
+      ? audioContext.currentTime + AUDIO_PLAYBACK_EDGE_FADE_SECONDS
+      : 0;
+    if (audioContext) {
+      new Set(activeAudioSourceGains.current.values()).forEach((gainNode) => {
+        try {
+          gainNode.gain.cancelScheduledValues(audioContext.currentTime);
+          gainNode.gain.setValueAtTime(
+            gainNode.gain.value,
+            audioContext.currentTime
+          );
+          gainNode.gain.linearRampToValueAtTime(0, stopAt);
+        } catch {
+          /* source stop below remains authoritative */
+        }
+      });
+    }
+
     activeAudioSources.current.forEach((source) => {
       try {
-        source.stop();
+        source.stop(stopAt || undefined);
       } catch {
         /* already stopped */
       }
     });
     activeAudioSources.current.clear();
+    activeAudioSourceGains.current.clear();
+    if (streamingPlaybackEnvelope.current) {
+      const staleEnvelope = streamingPlaybackEnvelope.current;
+      scheduleManagedTimeout(() => {
+        try {
+          staleEnvelope.node.disconnect();
+        } catch {
+          /* already disconnected */
+        }
+      }, Math.ceil(AUDIO_PLAYBACK_EDGE_FADE_SECONDS * 1000) + 2);
+      streamingPlaybackEnvelope.current = null;
+    }
+    streamingPlaybackComplete.current = false;
 
     isAudioPlaying.current = false;
     setAnimate(false);
@@ -920,9 +1078,10 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
 
   async function playQueuedPcm16(
     audio: EncodedSocketAudio,
-    sampleRate?: number
+    sampleRate?: number,
+    streaming = false
   ) {
-    queueAudioPlayback({ kind: "pcm16", audio, sampleRate });
+    queueAudioPlayback({ kind: "pcm16", audio, sampleRate, streaming });
   }
 
   const flushPcmJitterBuffer = (expectedKey?: string) => {
@@ -944,7 +1103,7 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
     current.chunks = [];
     current.byteLength = 0;
     current.started = true;
-    void playQueuedPcm16(combined, current.sampleRate);
+    void playQueuedPcm16(combined, current.sampleRate, true);
   };
 
   const queueStreamedPcm16 = (
@@ -956,7 +1115,7 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
       Number.isFinite(Number(requestedSampleRate)) && Number(requestedSampleRate) > 0
         ? Number(requestedSampleRate)
         : 24000;
-    const key = realtimeAudioKey(data) || "default-stream";
+    const key = namespacedRealtimeAudioKey(data);
     let current = pcmJitterBuffer.current;
 
     if (current && (current.key !== key || current.sampleRate !== sampleRate)) {
@@ -978,7 +1137,7 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
     }
 
     if (current.started) {
-      void playQueuedPcm16(audio, sampleRate);
+      void playQueuedPcm16(audio, sampleRate, true);
       return;
     }
 
@@ -986,6 +1145,7 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
     current.byteLength += audio.byteLength;
     const bufferedMs = (current.byteLength / (sampleRate * 2)) * 1000;
     const isFinalChunk = data?.isFinalChunk === true || data?.isFinal === true;
+    if (isFinalChunk) streamingPlaybackComplete.current = true;
 
     if (isFinalChunk || bufferedMs >= STREAM_INITIAL_BUFFER_MS) {
       flushPcmJitterBuffer(key);
@@ -1019,6 +1179,11 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
         ""
     );
 
+  const namespacedRealtimeAudioKey = (data: any): string =>
+    `${agentOutputNamespace.current || "unbound-agent"}::${
+      realtimeAudioKey(data) || "default-stream"
+    }`;
+
   const getRealtimePcmDelta = (
     data: any,
     audioPayload: EncodedSocketAudio
@@ -1027,7 +1192,7 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
     if (!bytes || bytes.byteLength < 2) return null;
 
     const now = Date.now();
-    const key = realtimeAudioKey(data);
+    const key = namespacedRealtimeAudioKey(data);
     const previous = realtimeAudioAccumulator.current;
     const sameStream =
       previous.bytes &&
@@ -1058,6 +1223,7 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
     data: any,
     options: { suppressIfStreaming?: boolean } = {}
   ) => {
+    if (!shouldPlaySocketAgentOutput(agentOutputMode.current)) return;
     const audioPayload = data?.audio ?? data?.audioBuffer;
     if (!audioPayload) return;
 
@@ -1084,6 +1250,8 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
       flushPcmJitterBuffer();
       resetPcmJitterBuffer();
       clearStreamedAudioPending();
+      streamingPlaybackComplete.current = true;
+      void finishAgentPlaybackIfIdle();
       return;
     }
 
@@ -1127,8 +1295,14 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
    */
   const buildRuntimeConfig = () => {
     const widgetRecord = (widgetConfig || {}) as Record<string, unknown>;
-    const audioSource = runtimeObject(widgetRecord.audioConfig || widgetRecord.audio);
-    const visionSource = runtimeObject(widgetRecord.visionConfig || widgetRecord.vision);
+    const audioSource = mergeRuntimeObjects(
+      widgetRecord.audio,
+      widgetRecord.audioConfig
+    );
+    const visionSource = mergeRuntimeObjects(
+      widgetRecord.vision,
+      widgetRecord.visionConfig
+    );
     const agentProfileSource = runtimeObject(widgetRecord.agentProfile);
     const useDemoDefaults = !hasExplicitRuntimeConfig(widgetConfig);
     const freshConfig = createDefaultRuntimeConfig(useDemoDefaults);
@@ -1155,6 +1329,8 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
       "interruptOnSpeech",
       "returnAudioFormat",
       "returnAll",
+      "preferWebRTCOutput",
+      "recordAgentOutput",
     ]);
     applyRuntimeFields(config.vision, visionSource, [
       "fps",
@@ -1390,7 +1566,7 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
       return out;
     };
 
-    const audioOut = sanitizeBlock(config.audio);
+    const audioOut = withAgentOutputDefaults(sanitizeBlock(config.audio));
     const visionOut = sanitizeBlock(config.vision);
     if (mode === "multimodal" && Array.isArray(visionOut.pipeline) && visionOut.pipeline.length > 0) {
       return {
@@ -1416,7 +1592,10 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
 
         if (ack?.retryable && attempt < 40) {
           const retryDelayMs = attempt < 8 ? 250 : 500;
-          setTimeout(() => confirmVoicePipelineReady(attempt + 1), retryDelayMs);
+          scheduleManagedTimeout(
+            () => confirmVoicePipelineReady(attempt + 1),
+            retryDelayMs
+          );
           return;
         }
 
@@ -1483,6 +1662,15 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
 
     const runtimeConfig = buildRuntimeConfig();
     const audioRuntimeConfig: any = runtimeConfig?.audio || {};
+    preferWebRtcAgentOutput.current =
+      audioRuntimeConfig.preferWebRTCOutput !== false;
+    agentOutputMode.current = initialAgentOutputMode(audioRuntimeConfig);
+    agentOutputNamespace.current = createAgentOutputNamespace(
+      agentRoom.current,
+      agentId || agentName || "agent",
+      widgetInstanceId.current
+    );
+    resetAudioPlayback({ restoreMic: false });
     realtimeVoiceMode.current =
       String(audioRuntimeConfig.speechEngine || "").trim().toLowerCase() ===
         "realtime" ||
@@ -1493,16 +1681,18 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
 
     try {
       if (socket.current && agentRoom.current && socket.current?.id) {
-        socket.current.off("startBuffers");
-        socket.current.once("startBuffers", () => {
-          socket.current?.emit(
+        startBuffersListenerCleanup.current?.();
+        const boundSocket = socket.current;
+        const handleStartBuffers = () => {
+          startBuffersListenerCleanup.current?.();
+          boundSocket.emit(
             "startBuffer",
             { roomName: agentRoom.current, member: "agent" },
             (response: any) => {
               if (response.success) {
                 setIsCapturing(true);
                 lastCaptureToggleRef.current = Date.now();
-                setTimeout(() => setTick((t) => t + 1), 15500);
+                scheduleManagedTimeout(() => setTick((t) => t + 1), 15500);
                 confirmVoicePipelineReady();
               } else {
                 voicePipelineConfirmed.current = false;
@@ -1512,9 +1702,14 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
               }
             }
           );
-        });
+        };
+        boundSocket.once("startBuffers", handleStartBuffers);
+        startBuffersListenerCleanup.current = () => {
+          boundSocket.off("startBuffers", handleStartBuffers);
+          startBuffersListenerCleanup.current = null;
+        };
 
-        socket.current.emit(
+        boundSocket.emit(
           "startDataBuffer",
           { roomName: agentRoom.current, config: runtimeConfig },
           (response: any) => {
@@ -1523,7 +1718,7 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
             } else {
               voicePipelineConfirmed.current = false;
               setIsCapturing(false);
-              socket.current?.off("startBuffers");
+              startBuffersListenerCleanup.current?.();
               console.warn("[widget-agent] Failed to start data buffer:", response?.reason);
               showToast(response?.reason || "Could not prepare media capture.", "error");
             }
@@ -1556,7 +1751,7 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
             setIsCapturing(false);
             voicePipelineConfirmed.current = false;
             lastCaptureToggleRef.current = now;
-            setTimeout(() => setTick((t) => t + 1), 15500);
+            scheduleManagedTimeout(() => setTick((t) => t + 1), 15500);
           } else {
             console.warn("[widget-agent] Failed to stop data buffer:", response.reason);
           }
@@ -1583,6 +1778,10 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
   };
 
   const endSession = useCallback(() => {
+    agentOutputMode.current = preferWebRtcAgentOutput.current
+      ? "awaiting-webrtc"
+      : "legacy-socket";
+    startBuffersListenerCleanup.current?.();
     resetAudioPlayback({ restoreMic: false });
     setPhase("ended");
     if (isCapturing) {
@@ -1791,8 +1990,16 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
     }
     // This widget is cloud-only. Buffer and agent events belong to the
     // primary MediaSFU room socket; localSocket is the community/cloud bridge.
-    if (sourceParameters.current.socket?.id && !socket.current) {
-      socket.current = sourceParameters.current.socket;
+    const nextSocket = sourceParameters.current.socket as Socket | undefined;
+    if (nextSocket?.id && socket.current !== nextSocket) {
+      socketListenerCleanup.current?.();
+      startBuffersListenerCleanup.current?.();
+      resetAudioPlayback({ restoreMic: false });
+      socket.current = nextSocket;
+      roomConnected.current = false;
+      agentOutputMode.current = preferWebRtcAgentOutput.current
+        ? "awaiting-webrtc"
+        : "legacy-socket";
     }
     // Audio level
     if (sourceParameters.current.audioLevel !== audioLevel.current) {
@@ -1841,12 +2048,20 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
         socketListenerCleanup.current?.();
         const boundSocket = socket.current;
         const listeners: Array<[string, (...args: any[]) => void]> = [
+          ["webAgentOutputModeV1", (data: unknown) => {
+            const previousMode = agentOutputMode.current;
+            const nextMode = nextAgentOutputMode(previousMode, data as any);
+            if (nextMode === previousMode) return;
+            agentOutputMode.current = nextMode;
+            if (nextMode === "webrtc") {
+              resetAudioPlayback({ restoreMic: false });
+            }
+          }],
           ["pipelineAudioChunk", (data: any) => {
             handleSocketAudioPayload(data);
           }],
           ["pipelineAudioStreamComplete", (data: any) => {
-            const streamKey = realtimeAudioKey(data);
-            flushPcmJitterBuffer(streamKey || undefined);
+            flushPcmJitterBuffer(namespacedRealtimeAudioKey(data));
             resetPcmJitterBuffer();
             realtimeAudioAccumulator.current = {
               key: "",
@@ -1854,6 +2069,8 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
               updatedAt: 0,
             };
             clearStreamedAudioPending();
+            streamingPlaybackComplete.current = true;
+            void finishAgentPlaybackIfIdle();
           }],
           ["pipelineResult", (data: any) => {
             handlePipelineTextPayload(data);
@@ -1888,6 +2105,9 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
             console.warn("[widget-agent] customErrorVision:", data?.error || data);
           }],
           ["disconnect", () => {
+            agentOutputMode.current = preferWebRtcAgentOutput.current
+              ? "awaiting-webrtc"
+              : "legacy-socket";
             resetAudioPlayback({ restoreMic: false });
             roomConnected.current = false;
             autoCaptureTriggered.current = false;
@@ -1917,7 +2137,7 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
       // ── Auto-capture: enable media based on startMode ──
       if (!autoCaptureTriggered.current) {
         autoCaptureTriggered.current = true;
-        setTimeout(async () => {
+        scheduleManagedTimeout(async () => {
           try {
             // Unlock audio context for playback
             if (!audioContextRef.current)
@@ -1950,7 +2170,7 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
             }
 
             // Start capture after media is ready
-            setTimeout(() => {
+            scheduleManagedTimeout(() => {
               if (roomConnected.current && !isCapturing) {
                 startCapture();
               }
@@ -1998,7 +2218,7 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
     return () => {
       try {
         socketListenerCleanup.current?.();
-        socket.current?.off("startBuffers");
+        startBuffersListenerCleanup.current?.();
       } catch {
         /* ignore */
       }
@@ -2018,6 +2238,14 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
         clearTimeout(visionCaptionTimer.current);
       if (streamedAudioResetTimer.current)
         clearTimeout(streamedAudioResetTimer.current);
+      managedTimeouts.current.forEach((timer) => clearTimeout(timer));
+      managedTimeouts.current.clear();
+      const staleAudioContext = audioContextRef.current;
+      audioContextRef.current = null;
+      audioUnlocked.current = false;
+      if (staleAudioContext && staleAudioContext.state !== "closed") {
+        void staleAudioContext.close().catch(() => undefined);
+      }
     };
   }, []);
 

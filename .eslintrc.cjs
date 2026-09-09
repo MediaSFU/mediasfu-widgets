@@ -8,7 +8,7 @@ module.exports = {
     sourceType: 'module',
     ecmaFeatures: { jsx: true },
   },
-  plugins: ['@typescript-eslint'],
+  plugins: ['@typescript-eslint', 'react-hooks'],
   env: {
     browser: true,
     es2022: true,
@@ -18,8 +18,6 @@ module.exports = {
     'dist/',
     'node_modules/',
     'platforms/',
-    'widget-agent/',
-    'widget-calls/',
     'widget-room/',
   ],
   rules: {

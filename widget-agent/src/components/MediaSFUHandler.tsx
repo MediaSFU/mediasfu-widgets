@@ -9,7 +9,7 @@ import {
   CreateJoinRoomResponse,
   CreateJoinRoomType,
 } from "mediasfu-reactjs";
-import { MediasfuGeneric, PreJoinPage } from "mediasfu-reactjs";
+import { AudioGrid, MediasfuGeneric, PreJoinPage } from "mediasfu-reactjs";
 
 /**
  * Creates a room-creation/join function bound to a specific API base URL.
@@ -107,6 +107,9 @@ const MediaSFUHandler: React.FC<MediaSFUHandlerProps> = ({
   const apiKey = credentialsProp?.apiKey || "";
   const credentials = useRef<Credentials | undefined>({ apiUserName, apiKey });
   const roomFunction = useRef(createRoomFunction(apiBaseUrl));
+  const roomAudio = Array.isArray(sourceParameters.audioOnlyStreams)
+    ? sourceParameters.audioOnlyStreams
+    : [];
 
   try {
     if (action === "create") {
@@ -152,17 +155,22 @@ const MediaSFUHandler: React.FC<MediaSFUHandlerProps> = ({
       }}
     >
       {noUIOptions.current && (
-        <MediasfuGeneric
-          PrejoinPage={(options: any) => <PreJoinPage {...options} />}
-          sourceParameters={sourceParameters}
-          updateSourceParameters={updateSourceParameters}
-          returnUI={false}
-          noUIPreJoinOptions={noUIOptions.current}
-          connectMediaSFU={true}
-          credentials={credentials.current}
-          joinMediaSFURoom={roomFunction.current}
-          createMediaSFURoom={roomFunction.current}
-        />
+        <>
+          <MediasfuGeneric
+            PrejoinPage={(options: any) => <PreJoinPage {...options} />}
+            sourceParameters={sourceParameters}
+            updateSourceParameters={updateSourceParameters}
+            returnUI={false}
+            noUIPreJoinOptions={noUIOptions.current}
+            connectMediaSFU={true}
+            credentials={credentials.current}
+            joinMediaSFURoom={roomFunction.current}
+            createMediaSFURoom={roomFunction.current}
+          />
+          {roomAudio.length > 0 && (
+            <AudioGrid componentsToRender={roomAudio} />
+          )}
+        </>
       )}
     </div>
   );
