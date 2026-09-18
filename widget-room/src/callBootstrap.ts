@@ -7,6 +7,7 @@ const FIELD_LIMITS = Object.freeze({
   apiKey: 512,
   islevel: 8,
   sec: 512,
+  hostSecureCode: 50,
   isWidgetCall: 8,
   widgetKey: 256,
   audioOnly: 8,

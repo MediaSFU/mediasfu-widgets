@@ -32,7 +32,7 @@ import { captureCallBootstrap, redeemCallBootstrap } from './callBootstrap';
 // =============================================================================
 // Log levels: 0 = none, 1 = error, 2 = warn, 3 = info, 4 = debug, 5 = verbose
 // Change this value to control log output
-const LOG_LEVEL = 3; // Default: info (errors, warnings, and important info)
+const LOG_LEVEL = 2; // Production: errors and warnings only; no routine call diagnostics.
 
 const logger = {
   error: (...args: unknown[]) => LOG_LEVEL >= 1 && console.error('[ClickToCall]', ...args),
@@ -64,6 +64,8 @@ function isClickToCall(): boolean {
 // Parse URL parameters for click-to-call
 interface ClickToCallConfig {
   bootstrap: string;
+  provisionedRoomName: string;
+  hostSecureCode: string;
   roomName: string;
   userName: string;
   apiUserName: string;
@@ -104,6 +106,8 @@ function parseClickToCallParams(): ClickToCallConfig {
   const sessionToken = params.get('sessionToken') || '';
   return {
     bootstrap: initialCallBootstrap,
+    provisionedRoomName: params.get('roomName') || params.get('room') || '',
+    hostSecureCode: '',
     roomName: params.get('roomName') || params.get('room') || sipCallId || `room_${Date.now()}`,
     userName: userName,
     apiUserName: params.get('apiUserName') || '',
@@ -595,6 +599,8 @@ function ClickToCallApp() {
           setCallConfig(prev => ({
             ...prev,
             bootstrap: '',
+            provisionedRoomName: payload.roomName || '',
+            hostSecureCode: payload.hostSecureCode || '',
             roomName: payload.roomName || sipCallId,
             userName: payload.userName || prev.userName,
             apiUserName: payload.apiUserName || '',
@@ -1312,8 +1318,7 @@ function ClickToCallApp() {
     hasApiKey: !!callConfig.apiKey,
   });
 
-  // noUIPreJoinOptions for auto-creating and joining the room
-  // Widget calls CREATE a new room (they are the host)
+  // Join server-provisioned calls; create only for deferred-room bootstraps.
   // NOTE: With the new architecture, we don't pass isWidgetCaller/sipCallId in joinRoom
   // Instead, after joining, we emit 'startWidgetCall' to activate widget call mode
   const noUIOptions = useMemo(() => {
@@ -1323,6 +1328,13 @@ function ClickToCallApp() {
       .slice(0, 10) || 'WebCaller';
 
 
+    if (callConfig.provisionedRoomName) {
+      return {
+        action: 'join' as const,
+        meetingID: callConfig.provisionedRoomName,
+        userName: callConfig.userName,
+      };
+    }
     return {
       action: 'create' as const,
       // No meetingID for create action - server generates it
@@ -1333,7 +1345,7 @@ function ClickToCallApp() {
       dataBuffer: true, // Buffer data for egress support
       bufferType: 'all' as const, // Buffer all data types
     };
-  }, [callConfig.userName]);
+  }, [callConfig.userName, callConfig.provisionedRoomName]);
 
   // Function to create/join room via MediaSFU API - MUST be before any early returns
   const handleMediaSFURequest = useCallback(async ({
@@ -1367,7 +1379,11 @@ function ClickToCallApp() {
           'Content-Type': 'application/json',
           Authorization: authHeader,
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          ...payload,
+          ...(payload.action === 'join' && payload.meetingID === callConfig.provisionedRoomName && callConfig.hostSecureCode
+            ? { secureCode: callConfig.hostSecureCode } : {}),
+        }),
       });
 
       const data = await response.json().catch(() => ({}));
@@ -1387,6 +1403,8 @@ function ClickToCallApp() {
     }
   }, [
     reportConnectionFailure,
+    callConfig.provisionedRoomName,
+    callConfig.hostSecureCode,
   ]);
 
   if (error) {
