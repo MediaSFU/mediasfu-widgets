@@ -94,3 +94,20 @@ test("active agent surface uses MediaSFU AudioGrid and negotiated PCM fallback",
   assert.match(handler, /audioOnlyStreams/);
   assert.doesNotMatch(app, /import\s+Agents(?:Voice|Multimodal)/);
 });
+
+test("agent capture waits for live media and cannot start twice", () => {
+  const unified = fs.readFileSync(
+    path.join(__dirname, "..", "src", "components", "AgentUnified.tsx"),
+    "utf8"
+  );
+
+  assert.match(unified, /if \(captureStartInFlight\.current\) return/);
+  assert.match(unified, /const generation = \+\+captureStartGeneration\.current/);
+  assert.match(unified, /if \(!currentAttempt\(\) \|\| bufferRequested\) return/);
+  assert.match(unified, /already started[\s\S]*scheduleManagedTimeout\(handleStartBuffers, 1500\)/i);
+  assert.match(unified, /sourceParameters\.current\.audioAlreadyOn/);
+  assert.match(unified, /sourceParameters\.current\.videoAlreadyOn/);
+  assert.match(unified, /while \(!mediaLive\(\)[\s\S]*roomConnected\.current\)/);
+  assert.match(unified, /if \(roomConnected\.current && !isCapturingRef\.current\)/);
+  assert.match(unified, /cancelCaptureStart\(\);[\s\S]*roomConnected\.current = false/);
+});

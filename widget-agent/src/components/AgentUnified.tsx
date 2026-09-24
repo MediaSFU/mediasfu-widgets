@@ -389,6 +389,9 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
   const agentOutputNamespace = useRef<string>("");
   const sessionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const managedTimeouts = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+  const captureStartInFlight = useRef<boolean>(false);
+  const captureStartGeneration = useRef<number>(0);
+  const captureStartWatchdog = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const scheduleManagedTimeout = (
     callback: () => void,
@@ -419,6 +422,9 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
 
   // ── UI states ───────────────────────────────────────────────
   const [isCapturing, setIsCapturing] = useState<boolean>(false);
+  // Socket callbacks and timers must read the current value, not a render snapshot.
+  const isCapturingRef = useRef<boolean>(false);
+  isCapturingRef.current = isCapturing;
   const [transcript, setTranscript] = useState<string>("");
   const [videoOn, setVideoOn] = useState<boolean>(false);
   const [showRoom, setShowRoom] = useState<boolean>(false);
@@ -1640,6 +1646,17 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
     );
   };
 
+  const cancelCaptureStart = () => {
+    captureStartGeneration.current += 1;
+    captureStartInFlight.current = false;
+    startBuffersListenerCleanup.current?.();
+    if (captureStartWatchdog.current) {
+      clearTimeout(captureStartWatchdog.current);
+      managedTimeouts.current.delete(captureStartWatchdog.current);
+      captureStartWatchdog.current = null;
+    }
+  };
+
   const startCapture = () => {
     if (!roomConnected.current) {
       showToast("Still connecting — just a moment.", "info");
@@ -1655,11 +1672,11 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
       return;
     }
 
-    if (isCapturing) {
-      stopCapture();
-      return;
-    }
-
+    if (isCapturingRef.current) return;
+    // Auto-start, a click, and reconnect can all arrive before the first ack.
+    if (captureStartInFlight.current) return;
+    const boundSocket = socket.current;
+    if (!boundSocket?.id || !agentRoom.current) return;
     const runtimeConfig = buildRuntimeConfig();
     const audioRuntimeConfig: any = runtimeConfig?.audio || {};
     preferWebRtcAgentOutput.current =
@@ -1679,53 +1696,77 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
     void applyRealtimeCaptureConstraints();
     voicePipelineConfirmed.current = false;
 
+    captureStartInFlight.current = true;
+    const generation = ++captureStartGeneration.current;
     try {
-      if (socket.current && agentRoom.current && socket.current?.id) {
+      let bufferRequested = false;
+      const currentAttempt = () =>
+        generation === captureStartGeneration.current &&
+        boundSocket === socket.current &&
+        roomConnected.current;
+      const finishAttempt = () => {
+        if (!currentAttempt()) return;
+        cancelCaptureStart();
+      };
+      const handleStartBuffers = () => {
+        if (!currentAttempt() || bufferRequested) return;
+        bufferRequested = true;
         startBuffersListenerCleanup.current?.();
-        const boundSocket = socket.current;
-        const handleStartBuffers = () => {
-          startBuffersListenerCleanup.current?.();
-          boundSocket.emit(
-            "startBuffer",
-            { roomName: agentRoom.current, member: "agent" },
-            (response: any) => {
-              if (response.success) {
-                setIsCapturing(true);
-                lastCaptureToggleRef.current = Date.now();
-                scheduleManagedTimeout(() => setTick((t) => t + 1), 15500);
-                confirmVoicePipelineReady();
-              } else {
-                voicePipelineConfirmed.current = false;
-                setIsCapturing(false);
-                console.warn("[widget-agent] Failed to start buffer:", response.reason);
-                showToast(response?.reason || "Could not start media capture.", "error");
-              }
-            }
-          );
-        };
-        boundSocket.once("startBuffers", handleStartBuffers);
-        startBuffersListenerCleanup.current = () => {
-          boundSocket.off("startBuffers", handleStartBuffers);
-          startBuffersListenerCleanup.current = null;
-        };
-
         boundSocket.emit(
-          "startDataBuffer",
-          { roomName: agentRoom.current, config: runtimeConfig },
+          "startBuffer",
+          { roomName: agentRoom.current, member: "agent" },
           (response: any) => {
-            if (response.success) {
+            if (!currentAttempt()) return;
+            finishAttempt();
+            if (response?.success) {
+              isCapturingRef.current = true;
+              setIsCapturing(true);
+              lastCaptureToggleRef.current = Date.now();
+              scheduleManagedTimeout(() => setTick((t) => t + 1), 15500);
               confirmVoicePipelineReady();
             } else {
               voicePipelineConfirmed.current = false;
               setIsCapturing(false);
-              startBuffersListenerCleanup.current?.();
-              console.warn("[widget-agent] Failed to start data buffer:", response?.reason);
-              showToast(response?.reason || "Could not prepare media capture.", "error");
+              console.warn("[widget-agent] Failed to start buffer:", response?.reason);
+              showToast(response?.reason || "Could not start media capture.", "error");
             }
           }
         );
-      }
+      };
+      boundSocket.once("startBuffers", handleStartBuffers);
+      startBuffersListenerCleanup.current = () => {
+        boundSocket.off("startBuffers", handleStartBuffers);
+        startBuffersListenerCleanup.current = null;
+      };
+      captureStartWatchdog.current = scheduleManagedTimeout(() => {
+        if (!currentAttempt()) return;
+        cancelCaptureStart();
+        showToast("Media is still connecting. Please try again.", "info");
+      }, 10000);
+
+      boundSocket.emit(
+        "startDataBuffer",
+        { roomName: agentRoom.current, config: runtimeConfig },
+        (response: any) => {
+          if (!currentAttempt()) return;
+          if (response?.success) {
+            confirmVoicePipelineReady();
+            return;
+          }
+          // Rejoining an already-running buffer is not a new capture failure.
+          if (/already started/i.test(String(response?.reason || ""))) {
+            scheduleManagedTimeout(handleStartBuffers, 1500);
+            return;
+          }
+          finishAttempt();
+          voicePipelineConfirmed.current = false;
+          setIsCapturing(false);
+          console.warn("[widget-agent] Failed to start data buffer:", response?.reason);
+          showToast(response?.reason || "Could not prepare media capture.", "error");
+        }
+      );
     } catch (error) {
+      cancelCaptureStart();
       console.error("Failed to start capture:", error);
     }
   };
@@ -1747,6 +1788,7 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
         { roomName: agentRoom.current },
         (response: any) => {
           if (response.success) {
+            isCapturingRef.current = false;
             resetAudioPlayback();
             setIsCapturing(false);
             voicePipelineConfirmed.current = false;
@@ -1778,6 +1820,7 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
   };
 
   const endSession = useCallback(() => {
+    cancelCaptureStart();
     agentOutputMode.current = preferWebRtcAgentOutput.current
       ? "awaiting-webrtc"
       : "legacy-socket";
@@ -1993,7 +2036,7 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
     const nextSocket = sourceParameters.current.socket as Socket | undefined;
     if (nextSocket?.id && socket.current !== nextSocket) {
       socketListenerCleanup.current?.();
-      startBuffersListenerCleanup.current?.();
+      cancelCaptureStart();
       resetAudioPlayback({ restoreMic: false });
       socket.current = nextSocket;
       roomConnected.current = false;
@@ -2105,6 +2148,7 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
             console.warn("[widget-agent] customErrorVision:", data?.error || data);
           }],
           ["disconnect", () => {
+            cancelCaptureStart();
             agentOutputMode.current = preferWebRtcAgentOutput.current
               ? "awaiting-webrtc"
               : "legacy-socket";
@@ -2169,12 +2213,22 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
               });
             }
 
-            // Start capture after media is ready
-            scheduleManagedTimeout(() => {
-              if (roomConnected.current && !isCapturing) {
-                startCapture();
-              }
-            }, 1200);
+            // SDK media toggles can resolve before the producers are live.
+            const wantsMic =
+              startModeRef.current === "voice" || startModeRef.current === "both";
+            const wantsCamera =
+              startModeRef.current === "vision" || startModeRef.current === "both";
+            const mediaLive = () =>
+              (!wantsMic || Boolean(sourceParameters.current.audioAlreadyOn)) &&
+              (!wantsCamera || Boolean(sourceParameters.current.videoAlreadyOn));
+            const readyBy = Date.now() + 8000;
+            while (!mediaLive() && Date.now() < readyBy && roomConnected.current) {
+              await new Promise((resolve) => setTimeout(resolve, 150));
+            }
+            await new Promise((resolve) => setTimeout(resolve, 400));
+            if (roomConnected.current && !isCapturingRef.current) {
+              startCapture();
+            }
           } catch (e) {
             console.error("Auto-capture setup failed:", e);
           }
@@ -2218,7 +2272,7 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
     return () => {
       try {
         socketListenerCleanup.current?.();
-        startBuffersListenerCleanup.current?.();
+        cancelCaptureStart();
       } catch {
         /* ignore */
       }
@@ -2228,8 +2282,11 @@ const AgentUnified: React.FC<AgentUnifiedProps> = ({
   // ── Cleanup room on unmount ──
   useEffect(() => {
     return () => {
+      const wasConnected = roomConnected.current;
+      cancelCaptureStart();
+      roomConnected.current = false;
       resetAudioPlayback({ restoreMic: false });
-      if (roomConnected.current) {
+      if (wasConnected) {
         disconnectRoom({ sourceParameters: sourceParameters.current });
       }
       if (sessionTimeoutRef.current) clearTimeout(sessionTimeoutRef.current);
